@@ -1,4 +1,4 @@
-# Efficient FE (Vite + React + TS)
+# Efficient-AI-based-Development-FE (Vite + React + TS)
 
 ## 🚀 개발 시작하기
 
@@ -40,22 +40,30 @@ pnpm format
 
 ```
 src/
-├── pages/              # 페이지 컴포넌트 (기능별 분리)
-│   ├── home/          # 홈 페이지
-│   ├── document/      # 문서 관리 페이지
-│   ├── task/          # 태스크 관리 페이지
-│   └── complete/      # 완료된 작업 페이지
-├── routes/            # 라우터 설정
-│   ├── root.tsx       # 루트 레이아웃 및 네비게이션
-│   └── routeTree.tsx  # 라우트 트리 정의
-├── lib/               # 공통 유틸리티 함수
-│   └── utils.ts       # 클래스명 유틸리티 등
-├── mocks/             # MSW API 목킹 설정
-│   ├── handlers.ts    # API 핸들러 정의
-│   └── browser.ts     # MSW 브라우저 설정
-└── test/              # 테스트 설정
-    └── setup.ts       # 테스트 환경 설정
+├── pages/                    # 기능(도메인)별 페이지 루트
+│   ├── home/                 # 홈 도메인 (여기 아래에 세부 폴더를 둡니다)
+│   │   ├── HomePage.tsx     # 홈 페이지 엔트리
+│   │   ├── components/      # 홈 전용 UI 컴포넌트들
+│   │   ├── store/           # 홈 전용 Zustand 스토어
+│   │   ├── hooks/           # 홈 전용 커스텀 훅
+│   │   └── services/        # 홈 전용 API/fetchers
+│   ├── document/
+│   ├── task/
+│   └── complete/
+├── routes/                   # 라우터 설정
+│   ├── root.tsx             # 루트 레이아웃 및 네비게이션
+│   └── routeTree.tsx        # 라우트 트리 정의
+├── lib/                      # 공통 유틸리티
+│   └── utils.ts
+├── mocks/                    # MSW API 목킹
+│   ├── handlers.ts
+│   └── browser.ts
+└── test/                     # 테스트 설정
+└── setup.ts
 ```
+> **Note**  
+> 각 기능(예: `home`)은 자체 `components/`, `store/`, `hooks/`, `services/`를 갖는 기능 기반 구조를 따릅니다.  
+> 공용으로 재사용되는 컴포넌트는 `src/components/`(필요 시)로 분리하세요.
 
 ## 🎯 개발 가이드라인
 
