@@ -1,3 +1,4 @@
+if (import.meta.env.DEV) { (async () => { const { worker } = await import("./mocks/browser"); await worker.start({ serviceWorker: { url: "/mockServiceWorker.js" } }); console.log("[MSW] started"); })(); }
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
