@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
     "lint": "eslint . --ext .ts,.tsx --max-warnings=0",
     "preview": "vite preview",
-    "format": "prettier -w ."
+    "format": "prettier -w .",
+    "test": "vitest",
+    "test:ui": "vitest --ui"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.2",
