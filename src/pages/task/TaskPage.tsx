@@ -1,0 +1,8 @@
+export default function TaskPage() {
+  return (
+    <div className="p-6">
+      <h1 className="text-2xl font-semibold">태스크 페이지</h1>
+      <p className="text-gray-600">태스크 관리 기능이 구현될 페이지입니다.</p>
+    </div>
+  );
+}
