@@ -1,5 +1,5 @@
 import TaskHeader from "./components/TaskHeader";
-import TaskColumn from "./components/TaskColumn";
+import TaskBoard from "./components/TaskBoard";
 
 export default function TaskPage() {
   const mockStats = {
@@ -24,25 +24,60 @@ export default function TaskPage() {
       status: "TODO" as const,
       priority: 8,
     },
+    {
+      id: "3",
+      title: "홈페이지 화면 구현",
+      type: "CODE" as const,
+      typeNumber: 1,
+      status: "IN_PROGRESS" as const,
+      priority: 8,
+    },
+    {
+      id: "4",
+      title: "홈페이지 화면 구현",
+      type: "CODE" as const,
+      typeNumber: 1,
+      status: "REVIEW" as const,
+      priority: 8,
+    },
+    {
+      id: "5",
+      title: "홈페이지 화면 구현",
+      type: "DESIGN" as const,
+      typeNumber: 1,
+      status: "REVIEW" as const,
+      priority: 8,
+    },
+    {
+      id: "6",
+      title: "홈페이지 화면 구현",
+      type: "DESIGN" as const,
+      typeNumber: 1,
+      status: "REVIEW" as const,
+      priority: 8,
+    },
+    {
+      id: "7",
+      title: "MCP 연동 완료",
+      type: "CODE" as const,
+      typeNumber: 1,
+      status: "DONE" as const,
+      priority: 8,
+    },
+    {
+      id: "8",
+      title: "홈페이지 화면 구현",
+      type: "DESIGN" as const,
+      typeNumber: 1,
+      status: "DONE" as const,
+      priority: 8,
+    },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <TaskHeader stats={mockStats} />
-
-      {/* 임시로 TaskColumn 미리보기 */}
-      <div className="mt-6">
-        <h2 className="text-lg font-semibold mb-4">TaskColumn 미리보기</h2>
-        <div className="grid grid-cols-4 gap-4">
-          <TaskColumn
-            title="To Do"
-            status="TODO"
-            count={2}
-            tasks={mockTasks}
-            bgColor="bg-customBlack"
-          />
-        </div>
-      </div>
+      <TaskBoard tasks={mockTasks} />
     </div>
   );
 }

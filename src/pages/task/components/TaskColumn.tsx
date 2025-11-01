@@ -38,11 +38,13 @@ export default function TaskColumn({
             <TaskCard key={task.id} task={task} />
           ))}
 
-        {/* 추가하기 버튼 */}
-        <button className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-colors flex items-center justify-center gap-2">
-          <Plus className="w-5 h-5" />
-          <span>추가하기</span>
-        </button>
+        {/* 추가하기 버튼 - To Do 컬럼에만 표시 */}
+        {status === "TODO" && (
+          <button className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-colors flex items-center justify-center gap-2">
+            <Plus className="w-5 h-5" />
+            <span>추가하기</span>
+          </button>
+        )}
       </div>
     </div>
   );
