@@ -14,7 +14,7 @@ export default function TaskCard({ task }: TaskCardProps) {
   };
 
   return (
-    <div className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer border border-gray-200">
+    <div className="bg-white rounded-[12px] p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer border border-gray-200">
       {/* 태그 */}
       <div className="mb-3">
         <span
