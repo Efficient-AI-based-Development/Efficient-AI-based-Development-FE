@@ -1,11 +1,33 @@
+import { useState } from "react";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
 import TaskColumn from "./TaskColumn";
+import TaskCard from "./TaskCard";
 import type { Task } from "../../../types/task";
 
 interface TaskBoardProps {
   tasks: Task[];
+  onTaskUpdate: (taskId: string, newStatus: Task["status"]) => void;
 }
 
-export default function TaskBoard({ tasks }: TaskBoardProps) {
+export default function TaskBoard({ tasks, onTaskUpdate }: TaskBoardProps) {
+  const [activeTask, setActiveTask] = useState<Task | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+  );
+
   const columns = [
     {
       title: "To Do",
@@ -33,18 +55,59 @@ export default function TaskBoard({ tasks }: TaskBoardProps) {
     return tasks.filter((task) => task.status === status).length;
   };
 
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    const task = tasks.find((t) => t.id === active.id);
+    if (task) {
+      setActiveTask(task);
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over) {
+      setActiveTask(null);
+      return;
+    }
+
+    const taskId = active.id as string;
+    const newStatus = over.id as Task["status"];
+
+    const task = tasks.find((t) => t.id === taskId);
+    if (task && task.status !== newStatus) {
+      onTaskUpdate(taskId, newStatus);
+    }
+
+    setActiveTask(null);
+  };
+
   return (
-    <div className="grid grid-cols-4 gap-4">
-      {columns.map((column) => (
-        <TaskColumn
-          key={column.status}
-          title={column.title}
-          status={column.status}
-          count={getTaskCount(column.status)}
-          tasks={tasks}
-          bgColor={column.bgColor}
-        />
-      ))}
-    </div>
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="grid grid-cols-4 gap-4">
+        {columns.map((column) => (
+          <TaskColumn
+            key={column.status}
+            title={column.title}
+            status={column.status}
+            count={getTaskCount(column.status)}
+            tasks={tasks}
+            bgColor={column.bgColor}
+          />
+        ))}
+      </div>
+
+      <DragOverlay>
+        {activeTask ? (
+          <div className="cursor-grabbing">
+            <TaskCard task={activeTask} />
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 }
