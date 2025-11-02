@@ -43,6 +43,62 @@ export default function TaskDetailModal({
     setIsEditMode(true);
   };
 
+  // 마크다운 컴포넌트 설정 (공통)
+  const markdownComponents = {
+    h2: ({ children }: { children: React.ReactNode }) => (
+      <h2 className="text-lg font-bold mt-4 mb-3 first:mt-0">{children}</h2>
+    ),
+    h3: ({ children }: { children: React.ReactNode }) => (
+      <h3 className="text-base font-bold mt-3 mb-2">{children}</h3>
+    ),
+    ul: ({ children }: { children: React.ReactNode }) => (
+      <ul className="space-y-1 my-2">{children}</ul>
+    ),
+    ol: ({ children }: { children: React.ReactNode }) => (
+      <ol className="list-decimal list-inside space-y-1 my-2">{children}</ol>
+    ),
+    li: ({ children }: { children: React.ReactNode }) => (
+      <li className="flex items-start text-sm">
+        <span className="mr-2">-</span>
+        <span>{children}</span>
+      </li>
+    ),
+    p: ({ children }: { children: React.ReactNode }) => (
+      <p className="text-sm leading-relaxed my-2">{children}</p>
+    ),
+    strong: ({ children }: { children: React.ReactNode }) => (
+      <strong className="font-bold">{children}</strong>
+    ),
+    em: ({ children }: { children: React.ReactNode }) => (
+      <em className="italic">{children}</em>
+    ),
+    code: ({ children }: { children: React.ReactNode }) => (
+      <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono">
+        {children}
+      </code>
+    ),
+    pre: ({ children }: { children: React.ReactNode }) => (
+      <pre className="bg-gray-100 p-3 rounded-lg overflow-x-auto my-2">
+        {children}
+      </pre>
+    ),
+    blockquote: ({ children }: { children: React.ReactNode }) => (
+      <blockquote className="border-l-4 border-gray-300 pl-4 my-2 italic">
+        {children}
+      </blockquote>
+    ),
+    a: ({ children, href }: { children: React.ReactNode; href?: string }) => (
+      <a
+        href={href}
+        className="text-primary underline"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {children}
+      </a>
+    ),
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] p-0 bg-white">
@@ -71,34 +127,7 @@ export default function TaskDetailModal({
               <div className="max-h-[400px] overflow-y-auto">
                 {showPreview ? (
                   <div className="min-h-[400px]">
-                    <ReactMarkdown
-                      components={{
-                        h2: ({ children }) => (
-                          <h2 className="text-lg font-bold mt-4 mb-3 first:mt-0">
-                            {children}
-                          </h2>
-                        ),
-                        h3: ({ children }) => (
-                          <h3 className="text-base font-bold mt-3 mb-2">
-                            {children}
-                          </h3>
-                        ),
-                        ul: ({ children }) => (
-                          <ul className="space-y-1 my-2">{children}</ul>
-                        ),
-                        li: ({ children }) => (
-                          <li className="flex items-start text-sm">
-                            <span className="mr-2">-</span>
-                            <span>{children}</span>
-                          </li>
-                        ),
-                        p: ({ children }) => (
-                          <p className="text-sm leading-relaxed my-2">
-                            {children}
-                          </p>
-                        ),
-                      }}
-                    >
+                    <ReactMarkdown components={markdownComponents}>
                       {editedContent || "내용이 없습니다."}
                     </ReactMarkdown>
                   </div>
@@ -123,32 +152,7 @@ export default function TaskDetailModal({
           ) : (
             <div className="border border-gray-300 rounded-lg p-6 overflow-y-auto max-h-[400px]">
               {task.content ? (
-                <ReactMarkdown
-                  components={{
-                    h2: ({ children }) => (
-                      <h2 className="text-lg font-bold mt-4 mb-3 first:mt-0">
-                        {children}
-                      </h2>
-                    ),
-                    h3: ({ children }) => (
-                      <h3 className="text-base font-bold mt-3 mb-2">
-                        {children}
-                      </h3>
-                    ),
-                    ul: ({ children }) => (
-                      <ul className="space-y-1 my-2">{children}</ul>
-                    ),
-                    li: ({ children }) => (
-                      <li className="flex items-start text-sm">
-                        <span className="mr-2">-</span>
-                        <span>{children}</span>
-                      </li>
-                    ),
-                    p: ({ children }) => (
-                      <p className="text-sm leading-relaxed my-2">{children}</p>
-                    ),
-                  }}
-                >
+                <ReactMarkdown components={markdownComponents}>
                   {task.content}
                 </ReactMarkdown>
               ) : (
