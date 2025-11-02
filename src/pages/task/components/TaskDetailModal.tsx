@@ -26,6 +26,7 @@ export default function TaskDetailModal({
 }: TaskDetailModalProps) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedContent, setEditedContent] = useState(task.content || "");
+  const [showPreview, setShowPreview] = useState(false);
 
   const handleSave = () => {
     onUpdate(task.id, editedContent);
@@ -66,16 +67,61 @@ export default function TaskDetailModal({
         {/* 컨텐츠 */}
         <div className="px-6 pb-4">
           {isEditMode ? (
-            <div className="border border-gray-300 rounded-lg p-4">
-              <Textarea
-                value={editedContent}
-                onChange={(e) => setEditedContent(e.target.value)}
-                className="w-full min-h-[400px] font-mono text-sm focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-0"
-                placeholder="마크다운 형식으로 내용을 입력하세요..."
-              />
+            <div className="border border-gray-300 rounded-lg p-4 relative">
+              <div className="max-h-[400px] overflow-y-auto">
+                {showPreview ? (
+                  <div className="min-h-[400px]">
+                    <ReactMarkdown
+                      components={{
+                        h2: ({ children }) => (
+                          <h2 className="text-lg font-bold mt-4 mb-3 first:mt-0">
+                            {children}
+                          </h2>
+                        ),
+                        h3: ({ children }) => (
+                          <h3 className="text-base font-bold mt-3 mb-2">
+                            {children}
+                          </h3>
+                        ),
+                        ul: ({ children }) => (
+                          <ul className="space-y-1 my-2">{children}</ul>
+                        ),
+                        li: ({ children }) => (
+                          <li className="flex items-start text-sm">
+                            <span className="mr-2">-</span>
+                            <span>{children}</span>
+                          </li>
+                        ),
+                        p: ({ children }) => (
+                          <p className="text-sm leading-relaxed my-2">
+                            {children}
+                          </p>
+                        ),
+                      }}
+                    >
+                      {editedContent || "내용이 없습니다."}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <Textarea
+                    value={editedContent}
+                    onChange={(e) => setEditedContent(e.target.value)}
+                    className="w-full min-h-[400px] focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-0 resize-none"
+                    placeholder="마크다운 형식으로 내용을 입력하세요..."
+                  />
+                )}
+              </div>
+              <button
+                onMouseDown={() => setShowPreview(true)}
+                onMouseUp={() => setShowPreview(false)}
+                onMouseLeave={() => setShowPreview(false)}
+                className="absolute bottom-4 right-4 px-4 py-2 bg-primary text-white rounded-full text-sm hover:bg-primary/90 transition-colors"
+              >
+                미리보기
+              </button>
             </div>
           ) : (
-            <div className="border border-gray-300 rounded-lg p-6 overflow-y-auto max-h-[60vh]">
+            <div className="border border-gray-300 rounded-lg p-6 overflow-y-auto max-h-[400px]">
               {task.content ? (
                 <ReactMarkdown
                   components={{
@@ -120,13 +166,6 @@ export default function TaskDetailModal({
             <>
               <Button onClick={handleCancel} variant="outline" className="px-6">
                 취소
-              </Button>
-              <Button
-                onClick={() => setIsEditMode(false)}
-                variant="outline"
-                className="px-6"
-              >
-                미리보기
               </Button>
               <Button
                 onClick={handleSave}
