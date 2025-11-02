@@ -1,5 +1,6 @@
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
+import MDEditor from "@uiw/react-md-editor";
 import {
   Dialog,
   DialogContent,
@@ -7,7 +8,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import TaskTag from "./TaskTag";
 import type { Task } from "../../../types/task";
 
@@ -123,28 +123,20 @@ export default function TaskDetailModal({
         {/* 컨텐츠 */}
         <div className="px-6 pb-4">
           {isEditMode ? (
-            <div className="border border-gray-300 rounded-lg p-4 relative">
-              <div className="max-h-[400px] overflow-y-auto">
-                {showPreview ? (
-                  <div className="min-h-[400px]">
-                    <ReactMarkdown components={markdownComponents}>
-                      {editedContent || "내용이 없습니다."}
-                    </ReactMarkdown>
-                  </div>
-                ) : (
-                  <Textarea
-                    value={editedContent}
-                    onChange={(e) => setEditedContent(e.target.value)}
-                    className="w-full min-h-[400px] focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-0 resize-none"
-                    placeholder="마크다운 형식으로 내용을 입력하세요..."
-                  />
-                )}
-              </div>
+            <div className="border border-gray-300 rounded-lg overflow-hidden relative">
+              <MDEditor
+                value={editedContent}
+                onChange={(val) => setEditedContent(val || "")}
+                height={400}
+                preview={showPreview ? "preview" : "edit"}
+                hideToolbar={false}
+                visibleDragbar={false}
+              />
               <button
                 onMouseDown={() => setShowPreview(true)}
                 onMouseUp={() => setShowPreview(false)}
                 onMouseLeave={() => setShowPreview(false)}
-                className="absolute bottom-4 right-4 px-4 py-2 bg-primary text-white rounded-full text-sm hover:bg-primary/90 transition-colors"
+                className="absolute bottom-4 right-4 px-4 py-2 bg-primary text-white rounded-full text-sm hover:bg-primary/90 transition-colors z-10 shadow-lg"
               >
                 미리보기
               </button>
