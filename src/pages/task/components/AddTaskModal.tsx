@@ -44,7 +44,49 @@ export default function AddTaskModal({
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSend = () => {
+  // AI API 호출 함수 (나중에 실제 API로 교체)
+  const callAIAPI = async (userInput: string) => {
+    // TODO: 실제 AI API 호출로 교체 필요
+    // const response = await fetch('/api/ai/chat', {
+    //     method: 'POST',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: JSON.stringify({
+    //         message: userInput,
+    //         type: selectedType,
+    //         priority: priority,
+    //         conversationHistory: messages
+    //     })
+    // });
+    // const data = await response.json();
+    // return data;
+
+    // === MOCK 데이터 (개발용) ===
+    return new Promise<{ content: string; options?: string[] }>((resolve) => {
+      setTimeout(() => {
+        // 로그인 관련 키워드가 있으면 선택지 제공
+        const hasLoginKeyword =
+          userInput.includes("로그인") || userInput.includes("login");
+
+        if (hasLoginKeyword) {
+          resolve({
+            content: `좋아요! 로그인 기능에는 다양한 하위 항목이 있어요\n어떤 부분을 구현하고 싶으신가요?`,
+            options: [
+              "이메일 / 비밀번호 로그인",
+              "소셜 로그인 (Google, Kakao)",
+              "세션 or JWT 토큰 인증",
+              "로그인 폼 UI",
+            ],
+          });
+        } else {
+          resolve({
+            content: `${userInput}에 대한 작업을 이해했습니다. 추가 정보가 필요하시면 말씀해주세요.`,
+          });
+        }
+      }, 500);
+    });
+  };
+
+  const handleSend = async () => {
     if (!inputValue.trim() || isSending) return;
 
     setIsSending(true);
@@ -56,36 +98,33 @@ export default function AddTaskModal({
     const currentInput = inputValue;
     setInputValue("");
 
-    // TODO: 여기서 AI API 호출하여 응답 받기
-    // 임시로 간단한 응답 추가
-    setTimeout(() => {
-      // 로그인 관련 키워드가 있으면 선택지 제공
-      const hasLoginKeyword =
-        currentInput.includes("로그인") || currentInput.includes("login");
+    try {
+      // AI API 호출
+      const aiResponse = await callAIAPI(currentInput);
 
-      if (hasLoginKeyword) {
-        const aiMessage = {
-          role: "assistant" as const,
-          content: `좋아요! 로그인 기능에는 다양한 하위 항목이 있어요\n어떤 부분을 구현하고 싶으신가요?`,
-          options: [
-            "이메일 / 비밀번호 로그인",
-            "소셜 로그인 (Google, Kakao)",
-            "세션 or JWT 토큰 인증",
-            "로그인 폼 UI",
-          ],
-        };
-        setMessages((prev) => [...prev, aiMessage]);
+      const aiMessage = {
+        role: "assistant" as const,
+        content: aiResponse.content,
+        options: aiResponse.options,
+      };
+
+      setMessages((prev) => [...prev, aiMessage]);
+
+      if (aiResponse.options) {
         setShowOptions(true);
         setSelectedOptions([]);
-      } else {
-        const aiMessage = {
-          role: "assistant" as const,
-          content: `${currentInput}에 대한 작업을 이해했습니다. 추가 정보가 필요하시면 말씀해주세요.`,
-        };
-        setMessages((prev) => [...prev, aiMessage]);
       }
+    } catch (error) {
+      console.error("AI API 호출 실패:", error);
+      // 에러 처리
+      const errorMessage = {
+        role: "assistant" as const,
+        content: "죄송합니다. 일시적인 오류가 발생했습니다. 다시 시도해주세요.",
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsSending(false);
-    }, 500);
+    }
   };
 
   const handleSubmit = () => {
