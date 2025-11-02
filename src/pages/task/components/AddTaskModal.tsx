@@ -78,67 +78,80 @@ export default function AddTaskModal({
         </DialogHeader>
 
         {/* 컨텐츠 */}
-        <div className="px-6 py-4 space-y-6">
+        <div className="px-6 pb-4 space-y-6">
           {/* 태그 선택과 중요도를 하나의 박스에 */}
-          <div className="border border-primary/50 rounded-lg p-4">
-            <div className="flex items-center justify-between">
+          <div className="border border-primary/30 rounded-lg p-4">
+            <div className="grid grid-cols-2 gap-8">
               {/* 태그 선택 */}
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col gap-2">
                 <span className="text-sm font-semibold text-gray-700">
                   태그
                 </span>
-                <TaskTag
-                  type="DEV"
-                  isButton
-                  isSelected={selectedType === "DEV"}
-                  onClick={() => setSelectedType("DEV")}
-                  size="sm"
-                />
-                <TaskTag
-                  type="DESIGN"
-                  isButton
-                  isSelected={selectedType === "DESIGN"}
-                  onClick={() => setSelectedType("DESIGN")}
-                  size="sm"
-                />
-                <TaskTag
-                  type="DOCS"
-                  isButton
-                  isSelected={selectedType === "DOCS"}
-                  onClick={() => setSelectedType("DOCS")}
-                  size="sm"
-                />
+                <div className="flex gap-3">
+                  <TaskTag
+                    type="DEV"
+                    isButton
+                    isSelected={selectedType === "DEV"}
+                    onClick={() => setSelectedType("DEV")}
+                  />
+                  <TaskTag
+                    type="DESIGN"
+                    isButton
+                    isSelected={selectedType === "DESIGN"}
+                    onClick={() => setSelectedType("DESIGN")}
+                  />
+                  <TaskTag
+                    type="DOCS"
+                    isButton
+                    isSelected={selectedType === "DOCS"}
+                    onClick={() => setSelectedType("DOCS")}
+                  />
+                </div>
               </div>
 
               {/* 중요도 */}
-              <div className="flex items-center gap-4 min-w-[250px]">
-                <span className="text-sm font-semibold text-gray-700 whitespace-nowrap">
-                  중요도
-                </span>
-                <Slider
-                  value={[priority]}
-                  onValueChange={(value) => setPriority(value[0])}
-                  min={1}
-                  max={10}
-                  step={1}
-                  className="flex-1"
-                />
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-gray-700">
+                    중요도
+                  </span>
+                  <span className="font-bold text-red-500">{priority}</span>
+                </div>
+                <div className="space-y-1">
+                  <Slider
+                    value={[priority]}
+                    onValueChange={(value) => setPriority(value[0])}
+                    min={1}
+                    max={10}
+                    step={1}
+                  />
+                  <div className="relative w-full">
+                    <div className="flex justify-between px-[8px]">
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                        <span key={num} className="text-xs text-gray-400">
+                          {num}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* 안내 메시지 */}
-          <div className="bg-gray-100 rounded-[4px] p-4 w-[70%]">
-            <p className="text-sm text-gray-700 leading-relaxed">
-              좋아요! 새로운 작업이군요! 상단의 태그와 중요도를 설정한 후,
-              새롭게 추가하고 싶은 기능을 설명해주세요
-              <br />
-              ex) 로그인 기능을 추가하고 싶어
-            </p>
-          </div>
+          {/* 안내 메시지 + 채팅 영역 */}
+          <div className="min-h-[200px] max-h-[300px] overflow-y-auto space-y-3">
+            {/* 안내 메시지 */}
+            <div className="bg-gray-100 rounded-[4px] p-4 w-[70%]">
+              <p className="text-sm text-gray-700 leading-relaxed">
+                좋아요! 새로운 작업이군요! 상단의 태그와 중요도를 설정한 후,
+                새롭게 추가하고 싶은 기능을 설명해주세요
+                <br />
+                ex) 로그인 기능을 추가하고 싶어
+              </p>
+            </div>
 
-          {/* 채팅 영역 */}
-          <div className="space-y-3 min-h-[200px] max-h-[300px] overflow-y-auto">
+            {/* 채팅 메시지들 */}
             {messages.map((message, index) => (
               <div
                 key={index}

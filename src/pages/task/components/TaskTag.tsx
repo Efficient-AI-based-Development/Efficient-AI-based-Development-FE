@@ -6,7 +6,6 @@ interface TaskTagProps {
   isButton?: boolean;
   isSelected?: boolean;
   onClick?: () => void;
-  size?: "sm" | "md";
 }
 
 export default function TaskTag({
@@ -15,7 +14,6 @@ export default function TaskTag({
   isButton = false,
   isSelected = false,
   onClick,
-  size = "md",
 }: TaskTagProps) {
   const getTypeColor = () => {
     switch (type) {
@@ -36,9 +34,7 @@ export default function TaskTag({
     }
   };
 
-  const sizeClasses = size === "sm" ? "text-xs px-3 py-1" : "px-4 py-2 text-sm";
-
-  const baseClasses = `${getTypeColor()} ${sizeClasses} rounded-full font-semibold transition-colors`;
+  const baseClasses = `${getTypeColor()} text-xs px-3 py-1 rounded-full font-semibold transition-colors`;
 
   if (isButton) {
     return (

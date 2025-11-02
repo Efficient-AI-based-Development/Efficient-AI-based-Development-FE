@@ -39,7 +39,7 @@ export default function TaskCard({ task }: TaskCardProps) {
     >
       {/* 태그 */}
       <div className="mb-3">
-        <TaskTag type={task.type} number={task.typeNumber} size="sm" />
+        <TaskTag type={task.type} number={task.typeNumber} />
       </div>
 
       {/* 제목 */}
