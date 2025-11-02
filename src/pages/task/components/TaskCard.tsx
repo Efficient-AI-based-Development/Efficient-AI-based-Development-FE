@@ -29,11 +29,20 @@ export default function TaskCard({ task }: TaskCardProps) {
   };
 
   const getTypeColor = (type: Task["type"]) => {
-    return type === "CODE" ? "bg-primary" : "bg-yellow-400";
+    switch (type) {
+      case "DEV":
+        return "bg-primary";
+      case "DESIGN":
+        return "bg-yellow-400";
+      case "DOCS":
+        return "bg-gray-500";
+      default:
+        return "bg-gray-400";
+    }
   };
 
   const getTypeName = (type: Task["type"]) => {
-    return type === "CODE" ? "CODE" : "DESIGN";
+    return type;
   };
 
   return (

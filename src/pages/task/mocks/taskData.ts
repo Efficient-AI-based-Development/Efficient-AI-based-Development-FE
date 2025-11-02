@@ -4,7 +4,7 @@ export const mockTasks: Task[] = [
   {
     id: "1",
     title: "홈페이지 화면 구현",
-    type: "CODE",
+    type: "DEV",
     typeNumber: 1,
     status: "TODO",
     priority: 8,
@@ -20,7 +20,7 @@ export const mockTasks: Task[] = [
   {
     id: "3",
     title: "홈페이지 화면 구현",
-    type: "CODE",
+    type: "DEV",
     typeNumber: 1,
     status: "IN_PROGRESS",
     priority: 8,
@@ -28,7 +28,7 @@ export const mockTasks: Task[] = [
   {
     id: "4",
     title: "홈페이지 화면 구현",
-    type: "CODE",
+    type: "DEV",
     typeNumber: 1,
     status: "REVIEW",
     priority: 8,
@@ -52,7 +52,7 @@ export const mockTasks: Task[] = [
   {
     id: "7",
     title: "MCP 연동 완료",
-    type: "CODE",
+    type: "DEV",
     typeNumber: 1,
     status: "DONE",
     priority: 8,
