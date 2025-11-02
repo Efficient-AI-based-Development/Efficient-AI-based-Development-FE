@@ -2,12 +2,15 @@ import { useState, useEffect } from "react";
 import TaskHeader from "./components/TaskHeader";
 import TaskBoard from "./components/TaskBoard";
 import AddTaskModal from "./components/AddTaskModal";
+import TaskDetailModal from "./components/TaskDetailModal";
 import type { Task, TaskType } from "../../types/task";
 
 export default function TaskPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   // 태스크 목록 불러오기
   useEffect(() => {
@@ -95,6 +98,44 @@ export default function TaskPage() {
     }
   };
 
+  // 태스크 클릭 핸들러
+  const handleTaskClick = (task: Task) => {
+    setSelectedTask(task);
+    setIsDetailModalOpen(true);
+  };
+
+  // 태스크 내용 업데이트 핸들러
+  const handleUpdateTaskContent = async (taskId: string, content: string) => {
+    try {
+      // 낙관적 업데이트
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task.id === taskId ? { ...task, content } : task,
+        ),
+      );
+
+      // selectedTask도 업데이트
+      if (selectedTask && selectedTask.id === taskId) {
+        setSelectedTask({ ...selectedTask, content });
+      }
+
+      // API 호출
+      await fetch(`/api/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ content }),
+      });
+    } catch (error) {
+      console.error("Failed to update task content:", error);
+      // 에러 발생 시 다시 불러오기
+      const response = await fetch("/api/tasks");
+      const data = await response.json();
+      setTasks(data);
+    }
+  };
+
   // 통계 계산
   const stats = {
     totalTasks: tasks.length,
@@ -139,6 +180,7 @@ export default function TaskPage() {
           tasks={tasks}
           onTaskUpdate={handleTaskUpdate}
           onAddTask={() => setIsModalOpen(true)}
+          onTaskClick={handleTaskClick}
         />
       </div>
 
@@ -148,6 +190,16 @@ export default function TaskPage() {
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleAddTask}
       />
+
+      {/* 태스크 상세 모달 */}
+      {selectedTask && (
+        <TaskDetailModal
+          isOpen={isDetailModalOpen}
+          onClose={() => setIsDetailModalOpen(false)}
+          task={selectedTask}
+          onUpdate={handleUpdateTaskContent}
+        />
+      )}
     </div>
   );
 }

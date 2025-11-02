@@ -18,6 +18,7 @@ interface TaskColumnProps {
     priority: number;
     message: string;
   }) => void;
+  onTaskClick?: (task: Task) => void;
 }
 
 export default function TaskColumn({
@@ -27,6 +28,7 @@ export default function TaskColumn({
   tasks,
   bgColor,
   onAddTask,
+  onTaskClick,
 }: TaskColumnProps) {
   const { setNodeRef } = useDroppable({
     id: status,
@@ -52,7 +54,11 @@ export default function TaskColumn({
       <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
         <div ref={setNodeRef} className="flex-1 py-4 min-h-[500px] space-y-4">
           {columnTasks.map((task) => (
-            <TaskCard key={task.id} task={task} />
+            <TaskCard
+              key={task.id}
+              task={task}
+              onClick={() => onTaskClick?.(task)}
+            />
           ))}
 
           {/* 추가하기 버튼 - To Do 컬럼에만 표시 */}

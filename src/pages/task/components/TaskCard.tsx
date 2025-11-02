@@ -5,9 +5,10 @@ import TaskTag from "./TaskTag";
 
 interface TaskCardProps {
   task: Task;
+  onClick?: () => void;
 }
 
-export default function TaskCard({ task }: TaskCardProps) {
+export default function TaskCard({ task, onClick }: TaskCardProps) {
   const {
     attributes,
     listeners,
@@ -29,12 +30,21 @@ export default function TaskCard({ task }: TaskCardProps) {
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const handleClick = (e: React.MouseEvent) => {
+    // 드래그 중이 아닐 때만 클릭 이벤트 실행
+    if (!isDragging && onClick) {
+      e.stopPropagation();
+      onClick();
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       {...attributes}
       {...listeners}
+      onClick={handleClick}
       className="group bg-white rounded-[12px] p-4 shadow-sm hover:scale-105 transition-all duration-300 ease-in-out cursor-grab active:cursor-grabbing border border-gray-200"
     >
       {/* 태그 */}

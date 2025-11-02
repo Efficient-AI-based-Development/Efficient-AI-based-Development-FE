@@ -20,12 +20,14 @@ interface TaskBoardProps {
     priority: number;
     message: string;
   }) => void;
+  onTaskClick: (task: Task) => void;
 }
 
 export default function TaskBoard({
   tasks,
   onTaskUpdate,
   onAddTask,
+  onTaskClick,
 }: TaskBoardProps) {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
 
@@ -107,6 +109,7 @@ export default function TaskBoard({
             tasks={tasks}
             bgColor={column.bgColor}
             onAddTask={column.status === "TODO" ? onAddTask : undefined}
+            onTaskClick={onTaskClick}
           />
         ))}
       </div>
