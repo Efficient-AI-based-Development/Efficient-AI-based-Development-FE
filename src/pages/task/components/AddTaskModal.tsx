@@ -37,6 +37,7 @@ export default function AddTaskModal({
   const [isSending, setIsSending] = useState(false);
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [showOptions, setShowOptions] = useState(false);
+  const [canCreateTask, setCanCreateTask] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // 새 메시지가 추가되면 스크롤을 맨 아래로
@@ -61,7 +62,11 @@ export default function AddTaskModal({
     // return data;
 
     // === MOCK 데이터 (개발용) ===
-    return new Promise<{ content: string; options?: string[] }>((resolve) => {
+    return new Promise<{
+      content: string;
+      options?: string[];
+      canCreateTask?: boolean;
+    }>((resolve) => {
       setTimeout(() => {
         // 로그인 관련 키워드가 있으면 선택지 제공
         const hasLoginKeyword =
@@ -76,10 +81,12 @@ export default function AddTaskModal({
               "세션 or JWT 토큰 인증",
               "로그인 폼 UI",
             ],
+            canCreateTask: false, // 아직 선택 안 함
           });
         } else {
           resolve({
             content: `${userInput}에 대한 작업을 이해했습니다. 추가 정보가 필요하시면 말씀해주세요.`,
+            canCreateTask: true, // 충분한 정보가 있음
           });
         }
       }, 500);
@@ -114,6 +121,9 @@ export default function AddTaskModal({
         setShowOptions(true);
         setSelectedOptions([]);
       }
+
+      // AI가 충분한 정보를 얻었다고 판단하면 Task 생성 가능
+      setCanCreateTask(aiResponse.canCreateTask ?? false);
     } catch (error) {
       console.error("AI API 호출 실패:", error);
       // 에러 처리
@@ -141,6 +151,7 @@ export default function AddTaskModal({
     setInputValue("");
     setSelectedOptions([]);
     setShowOptions(false);
+    setCanCreateTask(false);
     onClose();
   };
 
@@ -170,6 +181,7 @@ export default function AddTaskModal({
       };
       setMessages((prev) => [...prev, aiMessage]);
       setIsSending(false);
+      setCanCreateTask(true); // 선택 완료 후 Task 생성 가능
     }, 500);
   };
 
@@ -230,7 +242,7 @@ export default function AddTaskModal({
                     step={1}
                   />
                   <div className="relative w-full">
-                    <div className="flex justify-between px-[8px]">
+                    <div className="flex justify-between px-[2px]">
                       {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
                         <span key={num} className="text-xs text-gray-400">
                           {num}
@@ -321,7 +333,7 @@ export default function AddTaskModal({
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder="메시지를 입력하세요..."
-                className="w-full min-h-[100px] resize-none pr-16 focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="w-full min-h-[100px] resize-none pr-16 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
                 disabled={showOptions}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
@@ -333,32 +345,33 @@ export default function AddTaskModal({
               <button
                 onClick={handleSend}
                 disabled={isSending || showOptions}
-                className="absolute bottom-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50 focus:outline-none"
+                className="absolute bottom-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50 focus:outline-none focus-visible:outline-none"
               >
                 <Send className="w-5 h-5 text-gray-600" />
               </button>
             </div>
 
-            {/* 아니야, AI랑 대화할래 버튼 - 입력창 밑에 */}
-            {showOptions && (
-              <Button
-                onClick={() => {
-                  setShowOptions(false);
-                  setSelectedOptions([]);
-                }}
-                variant="outline"
-                className="w-full"
-              >
-                아니야, AI랑 대화할래
-              </Button>
-            )}
+            {/* 버튼 영역 */}
+            {messages.length > 0 && (
+              <div className="flex gap-3 items-center">
+                {/* 아니야, AI랑 대화할래 버튼 */}
+                {showOptions && (
+                  <Button
+                    onClick={() => {
+                      setShowOptions(false);
+                      setSelectedOptions([]);
+                    }}
+                    className="flex-1 bg-black text-white hover:bg-black/90"
+                  >
+                    아니야, AI랑 대화할래
+                  </Button>
+                )}
 
-            {/* Task 생성하기 버튼 */}
-            {messages.length > 0 && !showOptions && (
-              <div className="flex justify-end">
+                {/* Task 생성하기 버튼 */}
                 <Button
                   onClick={handleSubmit}
-                  className="px-6 font-semibold text-white bg-black hover:bg-black/90"
+                  disabled={!canCreateTask}
+                  className={`px-6 font-semibold text-white bg-black hover:bg-black/90 disabled:opacity-50 disabled:cursor-not-allowed ${showOptions ? "" : "ml-auto"}`}
                 >
                   Task 생성하기
                 </Button>
