@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import TaskHeader from "./components/TaskHeader";
 import TaskBoard from "./components/TaskBoard";
-import type { Task } from "../../types/task";
+import AddTaskModal from "./components/AddTaskModal";
+import type { Task, TaskType } from "../../types/task";
 
 export default function TaskPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // 태스크 목록 불러오기
   useEffect(() => {
@@ -54,6 +56,45 @@ export default function TaskPage() {
     }
   };
 
+  // 태스크 추가 핸들러
+  const handleAddTask = async (data: {
+    type: TaskType;
+    priority: number;
+    message: string;
+  }) => {
+    try {
+      // 새 태스크 생성
+      const newTask: Task = {
+        id: String(Date.now()), // 임시 ID 생성
+        title: data.message.split("\n")[0] || "새로운 태스크",
+        type: data.type,
+        typeNumber: 1, // 타입별로 계산 필요
+        status: "TODO",
+        priority: data.priority,
+      };
+
+      // 낙관적 업데이트
+      setTasks((prevTasks) => [...prevTasks, newTask]);
+
+      // API 호출
+      await fetch("/api/tasks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newTask),
+      });
+
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Failed to add task:", error);
+      // 에러 발생 시 다시 불러오기
+      const response = await fetch("/api/tasks");
+      const data = await response.json();
+      setTasks(data);
+    }
+  };
+
   // 통계 계산
   const stats = {
     totalTasks: tasks.length,
@@ -94,8 +135,19 @@ export default function TaskPage() {
         </div>
 
         {/* 태스크 보드 */}
-        <TaskBoard tasks={tasks} onTaskUpdate={handleTaskUpdate} />
+        <TaskBoard
+          tasks={tasks}
+          onTaskUpdate={handleTaskUpdate}
+          onAddTask={() => setIsModalOpen(true)}
+        />
       </div>
+
+      {/* 태스크 추가 모달 */}
+      <AddTaskModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleAddTask}
+      />
     </div>
   );
 }

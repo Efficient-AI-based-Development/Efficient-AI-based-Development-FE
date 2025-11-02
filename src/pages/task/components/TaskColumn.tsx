@@ -5,7 +5,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import TaskCard from "./TaskCard";
-import type { Task, TaskStatus } from "../../../types/task";
+import type { Task, TaskStatus, TaskType } from "../../../types/task";
 
 interface TaskColumnProps {
   title: string;
@@ -13,6 +13,11 @@ interface TaskColumnProps {
   count: number;
   tasks: Task[];
   bgColor: string;
+  onAddTask?: (data: {
+    type: TaskType;
+    priority: number;
+    message: string;
+  }) => void;
 }
 
 export default function TaskColumn({
@@ -21,6 +26,7 @@ export default function TaskColumn({
   count,
   tasks,
   bgColor,
+  onAddTask,
 }: TaskColumnProps) {
   const { setNodeRef } = useDroppable({
     id: status,
@@ -50,8 +56,13 @@ export default function TaskColumn({
           ))}
 
           {/* 추가하기 버튼 - To Do 컬럼에만 표시 */}
-          {status === "TODO" && (
-            <button className="w-full py-3 rounded-lg text-gray-400 hover:text-gray-500 transition-colors flex items-center justify-center gap-2">
+          {status === "TODO" && onAddTask && (
+            <button
+              onClick={() =>
+                onAddTask({ type: "DEV", priority: 5, message: "" })
+              }
+              className="w-full py-3 rounded-lg text-gray-400 hover:text-gray-500 transition-colors flex items-center justify-center gap-2"
+            >
               <Plus className="w-5 h-5" />
               <span>추가하기</span>
             </button>

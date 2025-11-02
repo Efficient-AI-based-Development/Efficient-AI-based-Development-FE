@@ -10,14 +10,23 @@ import {
 } from "@dnd-kit/core";
 import TaskColumn from "./TaskColumn";
 import TaskCard from "./TaskCard";
-import type { Task } from "../../../types/task";
+import type { Task, TaskType } from "../../../types/task";
 
 interface TaskBoardProps {
   tasks: Task[];
   onTaskUpdate: (taskId: string, newStatus: Task["status"]) => void;
+  onAddTask: (data: {
+    type: TaskType;
+    priority: number;
+    message: string;
+  }) => void;
 }
 
-export default function TaskBoard({ tasks, onTaskUpdate }: TaskBoardProps) {
+export default function TaskBoard({
+  tasks,
+  onTaskUpdate,
+  onAddTask,
+}: TaskBoardProps) {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
 
   const sensors = useSensors(
@@ -97,6 +106,7 @@ export default function TaskBoard({ tasks, onTaskUpdate }: TaskBoardProps) {
             count={getTaskCount(column.status)}
             tasks={tasks}
             bgColor={column.bgColor}
+            onAddTask={column.status === "TODO" ? onAddTask : undefined}
           />
         ))}
       </div>
