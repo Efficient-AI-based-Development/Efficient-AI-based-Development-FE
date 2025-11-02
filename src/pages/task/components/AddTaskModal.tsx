@@ -9,6 +9,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import TaskTag from "./TaskTag";
 import type { TaskType } from "../../../types/task";
 
 interface AddTaskModalProps {
@@ -68,37 +69,12 @@ export default function AddTaskModal({
     onClose();
   };
 
-  const getTypeButtonStyle = (type: TaskType) => {
-    const baseStyle =
-      "px-4 py-2 rounded-full text-sm font-semibold transition-colors";
-    const isSelected = selectedType === type;
-
-    switch (type) {
-      case "DEV":
-        return `${baseStyle} ${isSelected ? "bg-primary text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}`;
-      case "DESIGN":
-        return `${baseStyle} ${isSelected ? "bg-yellow-400 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}`;
-      case "DOCS":
-        return `${baseStyle} ${isSelected ? "bg-gray-500 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}`;
-      default:
-        return baseStyle;
-    }
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] p-0 bg-white">
         {/* 헤더 */}
-        <DialogHeader className="px-6 py-4 border-b">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-xl font-bold">
-              Task 추가하기
-            </DialogTitle>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-            ></button>
-          </div>
+        <DialogHeader className="px-6 pt-8">
+          <DialogTitle className="text-xl font-bold">Task 추가하기</DialogTitle>
         </DialogHeader>
 
         {/* 컨텐츠 */}
@@ -111,24 +87,27 @@ export default function AddTaskModal({
                 <span className="text-sm font-semibold text-gray-700">
                   태그
                 </span>
-                <button
+                <TaskTag
+                  type="DEV"
+                  isButton
+                  isSelected={selectedType === "DEV"}
                   onClick={() => setSelectedType("DEV")}
-                  className={getTypeButtonStyle("DEV")}
-                >
-                  DEV#1
-                </button>
-                <button
+                  size="sm"
+                />
+                <TaskTag
+                  type="DESIGN"
+                  isButton
+                  isSelected={selectedType === "DESIGN"}
                   onClick={() => setSelectedType("DESIGN")}
-                  className={getTypeButtonStyle("DESIGN")}
-                >
-                  DESIGN#1
-                </button>
-                <button
+                  size="sm"
+                />
+                <TaskTag
+                  type="DOCS"
+                  isButton
+                  isSelected={selectedType === "DOCS"}
                   onClick={() => setSelectedType("DOCS")}
-                  className={getTypeButtonStyle("DOCS")}
-                >
-                  DOCS#1
-                </button>
+                  size="sm"
+                />
               </div>
 
               {/* 중요도 */}

@@ -1,6 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Task } from "../../../types/task";
+import TaskTag from "./TaskTag";
 
 interface TaskCardProps {
   task: Task;
@@ -28,23 +29,6 @@ export default function TaskCard({ task }: TaskCardProps) {
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const getTypeColor = (type: Task["type"]) => {
-    switch (type) {
-      case "DEV":
-        return "bg-primary";
-      case "DESIGN":
-        return "bg-yellow-400";
-      case "DOCS":
-        return "bg-gray-500";
-      default:
-        return "bg-gray-400";
-    }
-  };
-
-  const getTypeName = (type: Task["type"]) => {
-    return type;
-  };
-
   return (
     <div
       ref={setNodeRef}
@@ -55,11 +39,7 @@ export default function TaskCard({ task }: TaskCardProps) {
     >
       {/* 태그 */}
       <div className="mb-3">
-        <span
-          className={`${getTypeColor(task.type)} text-white text-xs font-semibold px-3 py-1 rounded-full`}
-        >
-          {getTypeName(task.type)}#{task.typeNumber}
-        </span>
+        <TaskTag type={task.type} number={task.typeNumber} size="sm" />
       </div>
 
       {/* 제목 */}
