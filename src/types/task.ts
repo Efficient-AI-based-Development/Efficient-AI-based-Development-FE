@@ -1,6 +1,6 @@
 export type TaskStatus = "TODO" | "IN_PROGRESS" | "REVIEW" | "DONE";
 
-export type TaskType = "CODE" | "DESIGN";
+export type TaskType = "DEV" | "DESIGN" | "DOCS";
 
 export interface Task {
   id: string;
