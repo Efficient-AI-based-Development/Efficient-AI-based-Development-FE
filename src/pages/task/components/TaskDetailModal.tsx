@@ -101,7 +101,7 @@ export default function TaskDetailModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] p-0 bg-white">
+      <DialogContent className="max-w-3xl min-h-[80vh] p-0 bg-white">
         {/* 헤더 */}
         <DialogHeader className="px-6 pt-8 pb-4">
           <div className="mb-3">
@@ -142,7 +142,7 @@ export default function TaskDetailModal({
               </button>
             </div>
           ) : (
-            <div className="border border-gray-300 rounded-lg p-6 overflow-y-auto max-h-[400px]">
+            <div className="border border-gray-300 rounded-lg p-6 overflow-y-auto min-h-[400px] max-h-[400px]">
               {task.content ? (
                 <ReactMarkdown components={markdownComponents}>
                   {task.content}
