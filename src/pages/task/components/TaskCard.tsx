@@ -42,7 +42,7 @@ export default function TaskCard({ task }: TaskCardProps) {
       style={style}
       {...attributes}
       {...listeners}
-      className="bg-white rounded-[12px] p-4 shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing border border-gray-200"
+      className="group bg-white rounded-[12px] p-4 shadow-sm hover:scale-105 transition-all duration-300 ease-in-out cursor-grab active:cursor-grabbing border border-gray-200"
     >
       {/* 태그 */}
       <div className="mb-3">
@@ -54,12 +54,16 @@ export default function TaskCard({ task }: TaskCardProps) {
       </div>
 
       {/* 제목 */}
-      <h3 className="text-customBlack font-medium mb-3">{task.title}</h3>
+      <h3 className="text-customBlack font-semibold group-hover:font-bold mb-3 transition-all">
+        {task.title}
+      </h3>
 
       {/* 중요도 */}
       <div className="flex items-center justify-end">
         <span className="text-sm text-gray-500">중요도 :</span>
-        <span className="text-red-500 font-semibold ml-1">{task.priority}</span>
+        <span className="text-red-500 font-bold text-lg ml-1">
+          {task.priority}
+        </span>
       </div>
     </div>
   );

@@ -34,9 +34,9 @@ export default function TaskColumn({
       {/* 컬럼 헤더 */}
       <div>
         <div
-          className={`${bgColor} text-white rounded-[12px] px-4 py-3 flex items-center justify-between`}
+          className={`${bgColor} text-white rounded-[5px] px-4 py-3 flex items-center justify-center`}
         >
-          <span className="font-semibold text-lg">
+          <span className="font-semibold flex">
             {title} : {count}
           </span>
         </div>
@@ -51,7 +51,7 @@ export default function TaskColumn({
 
           {/* 추가하기 버튼 - To Do 컬럼에만 표시 */}
           {status === "TODO" && (
-            <button className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-colors flex items-center justify-center gap-2">
+            <button className="w-full py-3 rounded-lg text-gray-400 hover:text-gray-500 transition-colors flex items-center justify-center gap-2">
               <Plus className="w-5 h-5" />
               <span>추가하기</span>
             </button>

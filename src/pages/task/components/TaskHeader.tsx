@@ -1,4 +1,5 @@
 import { Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import type { TaskStats } from "../../../types/task";
 
 interface TaskHeaderProps {
@@ -22,11 +23,11 @@ export default function TaskHeader({ stats }: TaskHeaderProps) {
       <div className="flex items-center justify-between">
         {/* 검색바 */}
         <div className="relative w-80">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <input
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
+          <Input
             type="text"
             placeholder="Task를 검색해보세요!"
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            className="pl-10 h-12"
           />
         </div>
 
