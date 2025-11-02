@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import MDEditor from "@uiw/react-md-editor";
 import {
@@ -16,6 +16,7 @@ interface TaskDetailModalProps {
   onClose: () => void;
   task: Task;
   onUpdate: (taskId: string, content: string) => void;
+  onStartTask: (taskId: string) => void; // Task를 IN_PROGRESS로 변경
 }
 
 export default function TaskDetailModal({
@@ -23,10 +24,20 @@ export default function TaskDetailModal({
   onClose,
   task,
   onUpdate,
+  onStartTask,
 }: TaskDetailModalProps) {
+  const [step, setStep] = useState<"detail" | "command">("detail"); // 화면 단계 (상세 → 명령어)
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedContent, setEditedContent] = useState(task.content || "");
   const [showPreview, setShowPreview] = useState(false);
+
+  // task가 변경될 때 상태 초기화
+  useEffect(() => {
+    setStep("detail"); // 상세 화면부터 시작
+    setIsEditMode(false);
+    setEditedContent(task.content || "");
+    setShowPreview(false);
+  }, [task.id, task.content]);
 
   const handleSave = () => {
     onUpdate(task.id, editedContent);
@@ -102,93 +113,152 @@ export default function TaskDetailModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl min-h-[80vh] p-0 bg-white">
-        {/* 헤더 */}
-        <DialogHeader className="px-6 pt-8 pb-4">
-          <div className="mb-3">
-            <TaskTag type={task.type} number={task.typeNumber} />
-          </div>
-          <div className="flex items-center justify-between gap-4">
-            <DialogTitle className="text-2xl font-bold">
-              {task.title}
-            </DialogTitle>
-            <div className="flex items-center gap-2 whitespace-nowrap">
-              <span className="text-sm text-gray-700">중요도 :</span>
-              <span className="text-red-500 font-bold text-xl">
-                {task.priority}
-              </span>
-            </div>
-          </div>
-        </DialogHeader>
+        {step === "detail" ? (
+          // 1단계: 상세 화면 (마크다운)
+          <>
+            <DialogHeader className="px-6 pt-8 pb-4">
+              <div className="mb-3">
+                <TaskTag type={task.type} number={task.typeNumber} />
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <DialogTitle className="text-2xl font-bold">
+                  {task.title}
+                </DialogTitle>
+                <div className="flex items-center gap-2 whitespace-nowrap">
+                  <span className="text-sm text-gray-700">중요도 :</span>
+                  <span className="text-red-500 font-bold text-xl">
+                    {task.priority}
+                  </span>
+                </div>
+              </div>
+            </DialogHeader>
 
-        {/* 컨텐츠 */}
-        <div className="px-6 pb-4">
-          {isEditMode ? (
-            <div className="border border-gray-300 rounded-lg overflow-hidden relative">
-              <MDEditor
-                value={editedContent}
-                onChange={(val) => setEditedContent(val || "")}
-                height={400}
-                preview={showPreview ? "preview" : "edit"}
-                hideToolbar={false}
-                visibleDragbar={false}
-              />
-              <button
-                onMouseDown={() => setShowPreview(true)}
-                onMouseUp={() => setShowPreview(false)}
-                onMouseLeave={() => setShowPreview(false)}
-                className="absolute bottom-4 right-4 px-4 py-2 bg-primary text-white rounded-full text-sm hover:bg-primary/90 transition-colors z-10 shadow-lg"
-              >
-                미리보기
-              </button>
-            </div>
-          ) : (
-            <div className="border border-gray-300 rounded-lg p-6 overflow-y-auto min-h-[400px] max-h-[400px]">
-              {task.content ? (
-                <ReactMarkdown components={markdownComponents}>
-                  {task.content}
-                </ReactMarkdown>
+            {/* 컨텐츠 */}
+            <div className="px-6 pb-4">
+              {isEditMode ? (
+                <div className="border border-gray-300 rounded-lg overflow-hidden relative">
+                  <MDEditor
+                    value={editedContent}
+                    onChange={(val) => setEditedContent(val || "")}
+                    height={400}
+                    preview={showPreview ? "preview" : "edit"}
+                    hideToolbar={false}
+                    visibleDragbar={false}
+                  />
+                  <button
+                    onMouseDown={() => setShowPreview(true)}
+                    onMouseUp={() => setShowPreview(false)}
+                    onMouseLeave={() => setShowPreview(false)}
+                    className="absolute bottom-4 right-4 px-4 py-2 bg-primary text-white rounded-full text-sm hover:bg-primary/90 transition-colors z-10 shadow-lg"
+                  >
+                    미리보기
+                  </button>
+                </div>
               ) : (
-                <p className="text-gray-400 text-center py-8">
-                  내용이 없습니다.
-                </p>
+                <div className="border border-gray-300 rounded-lg p-6 overflow-y-auto min-h-[400px] max-h-[400px]">
+                  {task.content ? (
+                    <ReactMarkdown components={markdownComponents}>
+                      {task.content}
+                    </ReactMarkdown>
+                  ) : (
+                    <p className="text-gray-400 text-center py-8">
+                      내용이 없습니다.
+                    </p>
+                  )}
+                </div>
               )}
             </div>
-          )}
-        </div>
 
-        {/* 하단 버튼 */}
-        <div className="px-6 py-4 flex justify-end gap-3">
-          {isEditMode ? (
-            <>
-              <Button onClick={handleCancel} variant="outline" className="px-6">
-                취소
-              </Button>
-              <Button
-                onClick={handleSave}
-                className="px-6 bg-black text-white hover:bg-black/90 outline-none focus:outline-none focus-visible:outline-none"
-              >
-                저장
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                onClick={handleEdit}
-                className="px-8 bg-black text-white hover:bg-black/90 outline-none focus:outline-none focus-visible:outline-none"
-              >
-                수정
+            {/* 하단 버튼 */}
+            <div className="px-6 py-4 flex justify-end gap-3">
+              {isEditMode ? (
+                <>
+                  <Button
+                    onClick={handleCancel}
+                    variant="outline"
+                    className="px-6"
+                  >
+                    취소
+                  </Button>
+                  <Button
+                    onClick={handleSave}
+                    className="px-6 bg-black text-white hover:bg-black/90 outline-none focus:outline-none focus-visible:outline-none"
+                  >
+                    저장
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    onClick={handleEdit}
+                    className="px-8 bg-black text-white hover:bg-black/90 outline-none focus:outline-none focus-visible:outline-none"
+                  >
+                    수정
+                  </Button>
+                  <Button
+                    onClick={() => setStep("command")}
+                    className="px-8 bg-black text-white hover:bg-black/90 outline-none focus:outline-none focus-visible:outline-none"
+                  >
+                    다음
+                  </Button>
+                </>
+              )}
+            </div>
+          </>
+        ) : (
+          // 2단계: 명령어 화면
+          <>
+            <DialogHeader className="px-6 pt-8 pb-4">
+              <div className="mb-3">
+                <TaskTag type={task.type} number={task.typeNumber} />
+              </div>
+              <DialogTitle className="text-2xl font-bold">
+                {task.title}
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="px-6 pb-6 flex flex-col items-center justify-center min-h-[400px] space-y-6">
+              <p className="text-gray-600 text-center">
+                명령어를 복사해서 Cursor에 입력하세요
+              </p>
+              <div className="w-full max-w-xl border border-gray-300 rounded-lg p-4 bg-gray-50 flex items-center gap-3">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="w-5 h-5 text-gray-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                    />
+                  </svg>
+                </div>
+                <p className="flex-1 text-sm text-gray-700">
+                  vooster-ai를 사용해서 4Y3M 프로젝트의 T-001 작업 수행하라
+                </p>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 flex justify-end gap-3">
+              <Button onClick={onClose} variant="outline" className="px-8">
+                나중에
               </Button>
               <Button
                 onClick={() => {
-                  /* TODO: 다음 Task로 이동 로직 */
+                  onStartTask(task.id);
+                  onClose();
                 }}
-                className="px-8 bg-black text-white hover:bg-black/90 outline-none focus:outline-none focus-visible:outline-none"
+                className="px-8 bg-black text-white hover:bg-black/90"
               >
-                다음
+                완료
               </Button>
-            </>
-          )}
-        </div>
+            </div>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

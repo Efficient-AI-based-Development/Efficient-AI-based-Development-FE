@@ -136,6 +136,35 @@ export default function TaskPage() {
     }
   };
 
+  // 태스크 시작 (TODO → IN_PROGRESS)
+  const handleStartTask = async (taskId: string) => {
+    try {
+      // 낙관적 업데이트
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task.id === taskId
+            ? { ...task, status: "IN_PROGRESS" as const }
+            : task,
+        ),
+      );
+
+      // API 호출
+      await fetch(`/api/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: "IN_PROGRESS" }),
+      });
+    } catch (error) {
+      console.error("Failed to start task:", error);
+      // 에러 발생 시 다시 불러오기
+      const response = await fetch("/api/tasks");
+      const data = await response.json();
+      setTasks(data);
+    }
+  };
+
   // 통계 계산
   const stats = {
     totalTasks: tasks.length,
@@ -198,6 +227,7 @@ export default function TaskPage() {
           onClose={() => setIsDetailModalOpen(false)}
           task={selectedTask}
           onUpdate={handleUpdateTaskContent}
+          onStartTask={handleStartTask}
         />
       )}
     </div>
