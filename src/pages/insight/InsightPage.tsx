@@ -1,4 +1,4 @@
-export default function CompletePage() {
+export default function InsightPage() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-semibold">완료 페이지</h1>

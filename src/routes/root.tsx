@@ -15,7 +15,7 @@ export function RootLayout() {
           <Link to="/task" className="[&.active]:font-semibold">
             태스크
           </Link>
-          <Link to="/complete" className="[&.active]:font-semibold">
+          <Link to="/insight" className="[&.active]:font-semibold">
             완료
           </Link>
         </nav>

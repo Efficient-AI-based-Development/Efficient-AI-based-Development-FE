@@ -15,7 +15,7 @@ export default function TaskHeader({ stats }: TaskHeaderProps) {
         <Input
           type="text"
           placeholder="Task를 검색해보세요!"
-          className="pl-10 h-12"
+          className="pl-10 h-12 focus-visible:ring-0 focus-visible:ring-offset-0"
         />
       </div>
 
