@@ -1,6 +1,7 @@
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { Copy } from "lucide-react";
 import TaskTag from "../TaskTag";
 import type { Task } from "../../../../types/task";
 
@@ -54,21 +55,7 @@ export default function TaskCommandView({
           onClick={handleCopy}
           className="w-full max-w-xl border border-gray-300 rounded-lg p-4 bg-gray-50 flex cursor-pointer items-center gap-3 hover:bg-gray-100 transition-colors"
         >
-          <div className="flex-shrink-0">
-            <svg
-              className="w-5 h-5 text-gray-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-              />
-            </svg>
-          </div>
+          <Copy className="w-5 h-5 text-gray-600 flex-shrink-0" />
           <p className="flex-1 text-sm text-gray-700">{command}</p>
         </div>
       </div>
