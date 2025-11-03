@@ -2,6 +2,31 @@ import { useState, useRef, useEffect } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
 import { Menu } from "lucide-react";
 
+// 네비게이션 메뉴 데이터
+const NAV_ITEMS = [
+  { path: "/task", label: "태스크 관리" },
+  { path: "/insight", label: "인사이트" },
+  { path: "/project-setting", label: "프로젝트 설정" },
+] as const;
+
+// 드롭다운 메뉴 데이터
+const DROPDOWN_ITEMS = [
+  { path: "/my-projects", label: "내 프로젝트 관리" },
+  { path: "/mcp", label: "MCP 연동" },
+  { path: "/guide", label: "사용 가이드" },
+  { path: "/account", label: "계정 설정" },
+] as const;
+
+// 공통 스타일
+const STYLES = {
+  navLink:
+    "text-gray-700 hover:text-gray-900 font-medium transition-colors [&.active]:text-primary [&.active]:font-bold",
+  dropdownItem:
+    "w-full text-left px-3 py-2 hover:bg-gray-200 rounded-md transition-colors text-gray-700",
+  logoutButton:
+    "w-full text-left px-3 py-2 hover:bg-red-200 rounded-md transition-colors text-red-600 font-medium",
+} as const;
+
 export function Header() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -59,24 +84,11 @@ export function Header() {
         <div className="flex items-center gap-12">
           {/* 중앙 네비게이션 */}
           <nav className="flex items-center gap-8">
-            <Link
-              to="/task"
-              className="text-gray-700 hover:text-gray-900 font-medium transition-colors [&.active]:text-primary [&.active]:font-bold"
-            >
-              태스크 관리
-            </Link>
-            <Link
-              to="/insight"
-              className="text-gray-700 hover:text-gray-900 font-medium transition-colors [&.active]:text-primary [&.active]:font-bold"
-            >
-              인사이트
-            </Link>
-            <Link
-              to="/project-setting"
-              className="text-gray-700 hover:text-gray-900 font-medium transition-colors [&.active]:text-primary [&.active]:font-bold"
-            >
-              프로젝트 설정
-            </Link>
+            {NAV_ITEMS.map((item) => (
+              <Link key={item.path} to={item.path} className={STYLES.navLink}>
+                {item.label}
+              </Link>
+            ))}
           </nav>
 
           {/* 햄버거 메뉴 */}
@@ -92,35 +104,17 @@ export function Header() {
             {/* 드롭다운 메뉴 */}
             {isDropdownOpen && (
               <div className="absolute right-0 mt-3 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 px-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                <button
-                  onClick={() => handleDropdownItemClick("/my-projects")}
-                  className="w-full text-left px-3 py-2 hover:bg-gray-200 rounded-md transition-colors text-gray-700"
-                >
-                  내 프로젝트 관리
-                </button>
-                <button
-                  onClick={() => handleDropdownItemClick("/mcp")}
-                  className="w-full text-left px-3 py-2 hover:bg-gray-200 rounded-md transition-colors text-gray-700"
-                >
-                  MCP 연동
-                </button>
-                <button
-                  onClick={() => handleDropdownItemClick("/guide")}
-                  className="w-full text-left px-3 py-2 hover:bg-gray-200 rounded-md transition-colors text-gray-700"
-                >
-                  사용 가이드
-                </button>
-                <button
-                  onClick={() => handleDropdownItemClick("/account")}
-                  className="w-full text-left px-3 py-2 hover:bg-gray-200 rounded-md transition-colors text-gray-700"
-                >
-                  계정 설정
-                </button>
+                {DROPDOWN_ITEMS.map((item) => (
+                  <button
+                    key={item.path}
+                    onClick={() => handleDropdownItemClick(item.path)}
+                    className={STYLES.dropdownItem}
+                  >
+                    {item.label}
+                  </button>
+                ))}
                 <div className="border-t border-gray-200 my-2"></div>
-                <button
-                  onClick={handleLogout}
-                  className="w-full text-left px-3 py-2 hover:bg-red-200 rounded-md transition-colors text-red-600 font-medium"
-                >
+                <button onClick={handleLogout} className={STYLES.logoutButton}>
                   로그아웃
                 </button>
               </div>
