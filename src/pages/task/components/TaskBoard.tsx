@@ -7,6 +7,7 @@ import {
   useSensors,
   type DragEndEvent,
   type DragStartEvent,
+  closestCenter,
 } from "@dnd-kit/core";
 import TaskColumn from "./TaskColumn";
 import TaskCard from "./TaskCard";
@@ -83,10 +84,29 @@ export default function TaskBoard({
     }
 
     const taskId = active.id as string;
-    const newStatus = over.id as Task["status"];
+
+    // over.id가 status인지 확인 (column에 드랍) 또는 다른 task의 id인지 확인
+    let newStatus: Task["status"] | undefined;
+
+    // over.id가 status 중 하나인지 확인
+    const validStatuses: Task["status"][] = [
+      "TODO",
+      "IN_PROGRESS",
+      "REVIEW",
+      "DONE",
+    ];
+    if (validStatuses.includes(over.id as Task["status"])) {
+      newStatus = over.id as Task["status"];
+    } else {
+      // 다른 task 위에 드랍한 경우, 그 task의 status를 찾음
+      const overTask = tasks.find((t) => t.id === over.id);
+      if (overTask) {
+        newStatus = overTask.status;
+      }
+    }
 
     const task = tasks.find((t) => t.id === taskId);
-    if (task && task.status !== newStatus) {
+    if (task && newStatus && task.status !== newStatus) {
       onTaskUpdate(taskId, newStatus);
     }
 
@@ -96,6 +116,7 @@ export default function TaskBoard({
   return (
     <DndContext
       sensors={sensors}
+      collisionDetection={closestCenter}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
@@ -114,9 +135,9 @@ export default function TaskBoard({
         ))}
       </div>
 
-      <DragOverlay>
+      <DragOverlay dropAnimation={null}>
         {activeTask ? (
-          <div className="cursor-grabbing">
+          <div className="cursor-grabbing rotate-3 scale-105">
             <TaskCard task={activeTask} />
           </div>
         ) : null}
