@@ -34,9 +34,7 @@ export default function TaskColumn({
     id: status,
   });
 
-  const columnTasks = tasks
-    .filter((task) => task.status === status)
-    .sort((a, b) => a.order - b.order);
+  const columnTasks = tasks.filter((task) => task.status === status);
   const taskIds = columnTasks.map((task) => task.id);
 
   return (

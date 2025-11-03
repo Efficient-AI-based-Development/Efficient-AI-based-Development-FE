@@ -25,16 +25,14 @@ export default function TaskCommandView({
       await navigator.clipboard.writeText(command);
       toast({
         title: "복사되었습니다!",
-        description: "명령어가 클립보드에 복사되었습니다.",
-        duration: 1000,
+        duration: 5000,
       });
     } catch (error) {
       console.error("클립보드 복사 실패:", error);
       toast({
         title: "복사 실패",
-        description: "클립보드 복사에 실패했습니다.",
         variant: "destructive",
-        duration: 1000,
+        duration: 5000,
       });
     }
   };

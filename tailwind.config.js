@@ -8,6 +8,15 @@ export default {
                 secondary: "#4C2EFF",
                 customBlack: "#1E1E1E",
             },
+            keyframes: {
+                "bounce-subtle": {
+                    "0%, 100%": { transform: "translateY(0)" },
+                    "50%": { transform: "translateY(-8px)" },
+                },
+            },
+            animation: {
+                "bounce-subtle": "bounce-subtle 2s ease-in-out infinite",
+            },
         },
     },
     plugins: [],

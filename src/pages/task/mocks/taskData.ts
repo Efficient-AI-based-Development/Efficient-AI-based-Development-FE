@@ -171,7 +171,6 @@ export const mockTasks: Task[] = [
     status: "DONE",
     priority: 10,
     taskCode: "T-008",
-    order: 0,
     content: `## 프로젝트 초기 설정
 
 ### 완료 내용
