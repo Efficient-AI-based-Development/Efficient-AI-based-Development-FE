@@ -61,19 +61,19 @@ export function Header() {
           <nav className="flex items-center gap-8">
             <Link
               to="/task"
-              className="text-gray-700 hover:text-gray-900 font-medium transition-colors [&.active]:text-primary [&.active]:font-semibold"
+              className="text-gray-700 hover:text-gray-900 font-medium transition-colors [&.active]:text-primary [&.active]:font-bold"
             >
               태스크 관리
             </Link>
             <Link
               to="/insight"
-              className="text-gray-700 hover:text-gray-900 font-medium transition-colors [&.active]:text-primary [&.active]:font-semibold"
+              className="text-gray-700 hover:text-gray-900 font-medium transition-colors [&.active]:text-primary [&.active]:font-bold"
             >
               인사이트
             </Link>
             <Link
               to="/project-setting"
-              className="text-gray-700 hover:text-gray-900 font-medium transition-colors [&.active]:text-primary [&.active]:font-semibold"
+              className="text-gray-700 hover:text-gray-900 font-medium transition-colors [&.active]:text-primary [&.active]:font-bold"
             >
               프로젝트 설정
             </Link>
