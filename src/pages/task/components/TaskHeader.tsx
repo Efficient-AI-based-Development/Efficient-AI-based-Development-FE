@@ -4,9 +4,15 @@ import type { TaskStats } from "../../../types/task";
 
 interface TaskHeaderProps {
   stats: TaskStats;
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
 }
 
-export default function TaskHeader({ stats }: TaskHeaderProps) {
+export default function TaskHeader({
+  stats,
+  searchQuery,
+  onSearchChange,
+}: TaskHeaderProps) {
   return (
     <div className="flex items-center justify-between flex-1">
       {/* 검색바 */}
@@ -16,6 +22,8 @@ export default function TaskHeader({ stats }: TaskHeaderProps) {
           type="text"
           placeholder="Task를 검색해보세요!"
           className="pl-10 h-12 focus-visible:ring-0 focus-visible:ring-offset-0"
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
         />
       </div>
 
