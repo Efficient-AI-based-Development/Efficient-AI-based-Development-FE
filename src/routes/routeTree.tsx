@@ -10,6 +10,7 @@ const HomePage = lazy(() => import("@/pages/home/HomePage"));
 const DocumentPage = lazy(() => import("@/pages/document/DocumentPage"));
 const TaskPage = lazy(() => import("@/pages/task/TaskPage"));
 const InsightPage = lazy(() => import("@/pages/insight/InsightPage"));
+
 const ProjectSettingPage = lazy(
   () => import("@/pages/project-setting/ProjectSettingPage"),
 );
@@ -17,6 +18,7 @@ const MyProjectsPage = lazy(() => import("@/pages/my-projects/MyProjectsPage"));
 const McpPage = lazy(() => import("@/pages/mcp/McpPage"));
 const GuidePage = lazy(() => import("@/pages/guide/GuidePage"));
 const AccountPage = lazy(() => import("@/pages/account/AccountPage"));
+
 
 const rootRoute = createRootRoute({
   component: RootLayout,
@@ -59,6 +61,7 @@ const insightRoute = createRoute({
   component: () => (
     <Suspense fallback={<div className="p-6"> 로딩중...</div>}>
       <InsightPage />
+
     </Suspense>
   ),
 });
@@ -109,6 +112,7 @@ const accountRoute = createRoute({
   component: () => (
     <Suspense fallback={<div className="p-6"> 로딩중...</div>}>
       <AccountPage />
+
     </Suspense>
   ),
 });

@@ -8,6 +8,7 @@ export function RootLayout() {
       <main>
         <Outlet />
       </main>
+
     </div>
   );
 }
