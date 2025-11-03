@@ -11,6 +11,7 @@ export default function TaskPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // 프로젝트 정보
   const PROJECT_NAME = "4Y3M 프로젝트";
@@ -176,6 +177,17 @@ export default function TaskPage() {
     }
   };
 
+  // 검색 필터링
+  const filteredTasks = tasks.filter((task) => {
+    if (!searchQuery.trim()) return true;
+
+    const query = searchQuery.toLowerCase().trim();
+    const title = task.title.toLowerCase();
+    const taskCode = `${task.type}-${task.typeNumber}`.toLowerCase();
+
+    return title.includes(query) || taskCode.includes(query);
+  });
+
   // 통계 계산
   const stats = {
     totalTasks: tasks.length,
@@ -212,12 +224,16 @@ export default function TaskPage() {
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         {/* 검색바 + 통계 */}
         <div className="mb-6">
-          <TaskHeader stats={stats} />
+          <TaskHeader
+            stats={stats}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+          />
         </div>
 
         {/* 태스크 보드 */}
         <TaskBoard
-          tasks={tasks}
+          tasks={filteredTasks}
           onTaskUpdate={handleTaskUpdate}
           onAddTask={() => setIsModalOpen(true)}
           onTaskClick={handleTaskClick}

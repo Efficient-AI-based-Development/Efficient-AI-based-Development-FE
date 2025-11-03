@@ -1,5 +1,6 @@
 import { Outlet } from "@tanstack/react-router";
 import { Header } from "@/components/Header";
+import { Toaster } from "@/components/ui/toaster";
 
 export function RootLayout() {
   return (
@@ -8,6 +9,7 @@ export function RootLayout() {
       <main>
         <Outlet />
       </main>
+      <Toaster />
     </div>
   );
 }
