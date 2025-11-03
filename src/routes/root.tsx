@@ -1,4 +1,5 @@
 import { Outlet, Link } from "@tanstack/react-router";
+import { Toaster } from "@/components/ui/toaster";
 
 export function RootLayout() {
   return (
@@ -15,12 +16,13 @@ export function RootLayout() {
           <Link to="/task" className="[&.active]:font-semibold">
             태스크
           </Link>
-          <Link to="/complete" className="[&.active]:font-semibold">
+          <Link to="/insight" className="[&.active]:font-semibold">
             완료
           </Link>
         </nav>
       </header>
       <Outlet />
+      <Toaster />
     </div>
   );
 }
