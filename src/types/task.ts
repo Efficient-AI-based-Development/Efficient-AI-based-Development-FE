@@ -11,6 +11,7 @@ export interface Task {
   priority: number; // 중요도 (1-10)
   content?: string; // 마크다운 상세 내용
   taskCode?: string; // 작업 코드 (예: "T-001")
+  order: number; // 컬럼 내 순서
 }
 
 export interface TaskStats {

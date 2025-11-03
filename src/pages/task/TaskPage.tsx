@@ -39,11 +39,19 @@ export default function TaskPage() {
   ) => {
     try {
       // 낙관적 업데이트 (Optimistic Update)
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task.id === taskId ? { ...task, status: newStatus } : task,
-        ),
-      );
+      // 이동한 태스크를 해당 컬럼의 맨 끝에 추가
+      setTasks((prevTasks) => {
+        const targetTask = prevTasks.find((task) => task.id === taskId);
+        if (!targetTask || targetTask.status === newStatus) {
+          return prevTasks;
+        }
+
+        // 이동할 태스크를 제외한 나머지 태스크들
+        const otherTasks = prevTasks.filter((task) => task.id !== taskId);
+
+        // 이동한 태스크를 배열의 맨 끝에 추가
+        return [...otherTasks, { ...targetTask, status: newStatus }];
+      });
 
       // API 호출
       await fetch(`/api/tasks/${taskId}`, {
