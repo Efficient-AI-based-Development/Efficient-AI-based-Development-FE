@@ -9,7 +9,6 @@ import { RootLayout, NotFound } from "./root";
 const HomePage = lazy(() => import("@/pages/home/HomePage"));
 const DocumentPage = lazy(() => import("@/pages/document/DocumentPage"));
 const TaskPage = lazy(() => import("@/pages/task/TaskPage"));
-const CompletePage = lazy(() => import("@/pages/complete/CompletePage"));
 const InsightPage = lazy(() => import("@/pages/insight/InsightPage"));
 const ProjectSettingPage = lazy(
   () => import("@/pages/project-setting/ProjectSettingPage"),
@@ -50,16 +49,6 @@ const taskRoute = createRoute({
   component: () => (
     <Suspense fallback={<div className="p-6"> 로딩중...</div>}>
       <TaskPage />
-    </Suspense>
-  ),
-});
-
-const completeRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/complete",
-  component: () => (
-    <Suspense fallback={<div className="p-6"> 로딩중...</div>}>
-      <CompletePage />
     </Suspense>
   ),
 });
@@ -128,7 +117,6 @@ export const routeTree = rootRoute.addChildren([
   homeRoute,
   documentRoute,
   taskRoute,
-  completeRoute,
   insightRoute,
   projectSettingRoute,
   myProjectsRoute,
