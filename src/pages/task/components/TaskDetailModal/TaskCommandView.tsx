@@ -1,5 +1,6 @@
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import TaskTag from "../TaskTag";
 import type { Task } from "../../../../types/task";
 
@@ -16,14 +17,25 @@ export default function TaskCommandView({
   onComplete,
   onLater,
 }: TaskCommandViewProps) {
+  const { toast } = useToast();
   const command = `vooster-ai를 사용해서 ${projectName}의 ${task.taskCode || task.id} 작업 수행하라`;
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(command);
-      // TODO: 복사 완료 토스트 메시지 표시
+      toast({
+        title: "복사되었습니다!",
+        description: "명령어가 클립보드에 복사되었습니다.",
+        duration: 1000,
+      });
     } catch (error) {
       console.error("클립보드 복사 실패:", error);
+      toast({
+        title: "복사 실패",
+        description: "클립보드 복사에 실패했습니다.",
+        variant: "destructive",
+        duration: 1000,
+      });
     }
   };
 
