@@ -237,13 +237,13 @@ export default function AddTaskModal({
                   <Slider
                     value={[priority]}
                     onValueChange={(value) => setPriority(value[0])}
-                    min={1}
+                    min={0}
                     max={10}
                     step={1}
                   />
                   <div className="relative w-full">
-                    <div className="flex justify-between px-[2px]">
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                    <div className="flex justify-between pl-1">
+                      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
                         <span key={num} className="text-xs text-gray-400">
                           {num}
                         </span>
