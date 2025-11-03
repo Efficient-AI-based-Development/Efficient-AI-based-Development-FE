@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import TaskHeader from "./components/TaskHeader";
 import TaskBoard from "./components/TaskBoard";
 import AddTaskModal from "./components/AddTaskModal";
-import TaskDetailModal from "./components/TaskDetailModal";
+import TaskDetailModal from "./components/TaskDetailModal/TaskDetailModal";
 import type { Task, TaskType } from "../../types/task";
 
 export default function TaskPage() {
