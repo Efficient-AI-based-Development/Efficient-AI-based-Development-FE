@@ -49,78 +49,83 @@ export function Header() {
           <img src="/logo.svg" alt="ATLAS Logo" className="w-12 h-12" />
           <div className="flex items-center gap-1">
             <span className="font-bold text-xl text-gray-900">ATLAS</span>
-            <span className="text-gray-500">: AI-Efficient-development</span>
+            <span className="text-gray-900 text-base">
+              : AI-Efficient-development
+            </span>
           </div>
         </Link>
 
-        {/* 중앙 네비게이션 */}
-        <nav className="flex items-center gap-8">
-          <Link
-            to="/task"
-            className="text-gray-700 hover:text-gray-900 font-medium transition-colors [&.active]:text-blue-600 [&.active]:font-semibold"
-          >
-            태스크 관리
-          </Link>
-          <Link
-            to="/insight"
-            className="text-gray-700 hover:text-gray-900 font-medium transition-colors [&.active]:text-blue-600 [&.active]:font-semibold"
-          >
-            인사이트
-          </Link>
-          <Link
-            to="/project-setting"
-            className="text-gray-700 hover:text-gray-900 font-medium transition-colors [&.active]:text-blue-600 [&.active]:font-semibold"
-          >
-            프로젝트 설정
-          </Link>
-        </nav>
+        {/* 네비게이션 + 햄버거 메뉴 그룹 */}
+        <div className="flex items-center gap-12">
+          {/* 중앙 네비게이션 */}
+          <nav className="flex items-center gap-8">
+            <Link
+              to="/task"
+              className="text-gray-700 hover:text-gray-900 font-medium transition-colors [&.active]:text-blue-600 [&.active]:font-semibold"
+            >
+              태스크 관리
+            </Link>
+            <Link
+              to="/insight"
+              className="text-gray-700 hover:text-gray-900 font-medium transition-colors [&.active]:text-blue-600 [&.active]:font-semibold"
+            >
+              인사이트
+            </Link>
+            <Link
+              to="/project-setting"
+              className="text-gray-700 hover:text-gray-900 font-medium transition-colors [&.active]:text-blue-600 [&.active]:font-semibold"
+            >
+              프로젝트 설정
+            </Link>
+          </nav>
 
-        {/* 햄버거 메뉴 */}
-        <div className="relative" ref={dropdownRef}>
-          <button
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            aria-label="메뉴"
-          >
-            <Menu className="w-6 h-6 text-gray-700" />
-          </button>
+          {/* 햄버거 메뉴 */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              aria-label="메뉴"
+            >
+              <Menu className="w-6 h-6 text-gray-700" />
+            </button>
 
-          {/* 드롭다운 메뉴 */}
-          {isDropdownOpen && (
-            <div className="absolute right-0 mt-3 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-              <button
-                onClick={() => handleDropdownItemClick("/my-projects")}
-                className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors bg-gray-100 font-medium text-gray-900"
-              >
-                내 프로젝트 관리
-              </button>
-              <button
-                onClick={() => handleDropdownItemClick("/mcp")}
-                className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors text-gray-700"
-              >
-                MCP 연동
-              </button>
-              <button
-                onClick={() => handleDropdownItemClick("/guide")}
-                className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors text-gray-700"
-              >
-                사용 가이드
-              </button>
-              <button
-                onClick={() => handleDropdownItemClick("/account")}
-                className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors text-gray-700"
-              >
-                계정 설정
-              </button>
-              <div className="border-t border-gray-200 my-2"></div>
-              <button
-                onClick={handleLogout}
-                className="w-full text-left px-4 py-2.5 hover:bg-red-50 transition-colors text-red-600 font-medium"
-              >
-                로그아웃
-              </button>
-            </div>
-          )}
+            {/* 드롭다운 메뉴 */}
+            {isDropdownOpen && (
+              <div className="absolute right-0 mt-3 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                <button
+                  onClick={() => handleDropdownItemClick("/my-projects")}
+                  className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors bg-gray-100 font-medium text-gray-900"
+                >
+                  내 프로젝트 관리
+                </button>
+                <button
+                  onClick={() => handleDropdownItemClick("/mcp")}
+                  className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors text-gray-700"
+                >
+                  MCP 연동
+                </button>
+                <button
+                  onClick={() => handleDropdownItemClick("/guide")}
+                  className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors text-gray-700"
+                >
+                  사용 가이드
+                </button>
+                <button
+                  onClick={() => handleDropdownItemClick("/account")}
+                  className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors text-gray-700"
+                >
+                  계정 설정
+                </button>
+                <div className="border-t border-gray-200 my-2"></div>
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-left px-4 py-2.5 hover:bg-red-50 transition-colors text-red-600 font-medium"
+                >
+                  로그아웃
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>
