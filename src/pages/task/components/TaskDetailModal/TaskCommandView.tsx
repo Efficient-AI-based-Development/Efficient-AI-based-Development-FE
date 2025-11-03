@@ -5,18 +5,31 @@ import type { Task } from "../../../../types/task";
 
 interface TaskCommandViewProps {
   task: Task;
+  projectName: string;
   onComplete: () => void;
   onLater: () => void;
 }
 
 export default function TaskCommandView({
   task,
+  projectName,
   onComplete,
   onLater,
 }: TaskCommandViewProps) {
+  const command = `vooster-ai를 사용해서 ${projectName}의 ${task.taskCode || task.id} 작업 수행하라`;
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(command);
+      // TODO: 복사 완료 토스트 메시지 표시
+    } catch (error) {
+      console.error("클립보드 복사 실패:", error);
+    }
+  };
+
   return (
     <>
-      <DialogHeader className="px-6 pt-8 pb-4">
+      <DialogHeader className="px-6 pt-8 pb-2">
         <div className="mb-3">
           <TaskTag type={task.type} number={task.typeNumber} />
         </div>
@@ -27,7 +40,10 @@ export default function TaskCommandView({
         <p className="text-gray-600 text-center">
           명령어를 복사해서 Cursor에 입력하세요
         </p>
-        <div className="w-full max-w-xl border border-gray-300 rounded-lg p-4 bg-gray-50 flex items-center gap-3">
+        <div
+          onClick={handleCopy}
+          className="w-full max-w-xl border border-gray-300 rounded-lg p-4 bg-gray-50 flex cursor-pointer items-center gap-3 hover:bg-gray-100 transition-colors"
+        >
           <div className="flex-shrink-0">
             <svg
               className="w-5 h-5 text-gray-600"
@@ -43,9 +59,7 @@ export default function TaskCommandView({
               />
             </svg>
           </div>
-          <p className="flex-1 text-sm text-gray-700">
-            vooster-ai를 사용해서 4Y3M 프로젝트의 T-001 작업 수행하라
-          </p>
+          <p className="flex-1 text-sm text-gray-700">{command}</p>
         </div>
       </div>
 

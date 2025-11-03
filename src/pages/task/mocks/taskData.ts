@@ -8,6 +8,7 @@ export const mockTasks: Task[] = [
     typeNumber: 1,
     status: "TODO",
     priority: 8,
+    taskCode: "T-001",
     content: `## 홈페이지 화면 구현
 
 ### 요구사항
@@ -34,6 +35,7 @@ export const mockTasks: Task[] = [
     typeNumber: 1,
     status: "TODO",
     priority: 8,
+    taskCode: "T-002",
     content: `## 홈페이지 디자인
 
 ### 디자인 가이드
@@ -55,6 +57,7 @@ export const mockTasks: Task[] = [
     typeNumber: 3,
     status: "IN_PROGRESS",
     priority: 9,
+    taskCode: "T-003",
     content: `## 로그인 페이지 구현
 
 ### 요구사항
@@ -80,6 +83,7 @@ export const mockTasks: Task[] = [
     typeNumber: 1,
     status: "REVIEW",
     priority: 8,
+    taskCode: "T-004",
     content: `## 홈페이지 화면 구현
 
 ### 완료 사항
@@ -99,6 +103,7 @@ export const mockTasks: Task[] = [
     typeNumber: 1,
     status: "REVIEW",
     priority: 8,
+    taskCode: "T-005",
   },
   {
     id: "6",
@@ -107,6 +112,7 @@ export const mockTasks: Task[] = [
     typeNumber: 1,
     status: "REVIEW",
     priority: 8,
+    taskCode: "T-006",
   },
   {
     id: "7",
@@ -115,6 +121,7 @@ export const mockTasks: Task[] = [
     typeNumber: 1,
     status: "DONE",
     priority: 8,
+    taskCode: "T-007",
     content: `## MCP 연동 완료
 
 ### 구현 내용
@@ -134,5 +141,6 @@ export const mockTasks: Task[] = [
     typeNumber: 1,
     status: "DONE",
     priority: 8,
+    taskCode: "T-008",
   },
 ];

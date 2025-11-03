@@ -12,6 +12,9 @@ export default function TaskPage() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
+  // 프로젝트 정보
+  const PROJECT_NAME = "4Y3M 프로젝트";
+
   // 태스크 목록 불러오기
   useEffect(() => {
     const fetchTasks = async () => {
@@ -226,6 +229,7 @@ export default function TaskPage() {
           isOpen={isDetailModalOpen}
           onClose={() => setIsDetailModalOpen(false)}
           task={selectedTask}
+          projectName={PROJECT_NAME}
           onUpdate={handleUpdateTaskContent}
           onStartTask={handleStartTask}
         />
