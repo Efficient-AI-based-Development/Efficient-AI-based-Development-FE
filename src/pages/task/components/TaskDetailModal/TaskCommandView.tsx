@@ -7,19 +7,19 @@ import type { Task } from "../../../../types/task";
 
 interface TaskCommandViewProps {
   task: Task;
-  projectName: string;
+  projectId: string;
   onComplete: () => void;
   onLater: () => void;
 }
 
 export default function TaskCommandView({
   task,
-  projectName,
+  projectId,
   onComplete,
   onLater,
 }: TaskCommandViewProps) {
   const { toast } = useToast();
-  const command = `vooster-ai를 사용해서 ${projectName}의 ${task.taskCode || task.id} 작업 수행하라`;
+  const command = `vooster-ai를 사용해서 ${projectId}의 ${task.taskCode || task.id} 작업 수행하라`;
 
   const handleCopy = async () => {
     try {

@@ -14,7 +14,7 @@ export default function TaskPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // 프로젝트 정보
-  const PROJECT_NAME = "4Y3M 프로젝트";
+  const PROJECT_ID = "4Y3M";
 
   // 태스크 목록 불러오기
   useEffect(() => {
@@ -253,7 +253,7 @@ export default function TaskPage() {
           isOpen={isDetailModalOpen}
           onClose={() => setIsDetailModalOpen(false)}
           task={selectedTask}
-          projectName={PROJECT_NAME}
+          projectId={PROJECT_ID}
           onUpdate={handleUpdateTaskContent}
           onStartTask={handleStartTask}
         />

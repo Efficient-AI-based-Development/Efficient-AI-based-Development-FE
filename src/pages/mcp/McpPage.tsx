@@ -17,6 +17,9 @@ export default function McpPage() {
   const router = useRouter();
   const { toast } = useToast();
 
+  // TODO: API에서 프로젝트 정보 가져오기
+  const projectName = "종합설계프로젝트 1팀";
+
   // 외부 클릭 감지하여 드롭다운 닫기
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -62,9 +65,7 @@ export default function McpPage() {
       <div className="max-w-7xl mx-auto">
         {/* 프로젝트명과 대시보드 버튼 */}
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            종합설계프로젝트 1팀
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-900">{projectName}</h1>
           <Button
             className="bg-black hover:bg-gray-800 text-white rounded-lg px-6 py-2"
             onClick={() => router.navigate({ to: "/task" })}
