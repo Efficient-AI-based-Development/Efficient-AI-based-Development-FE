@@ -7,33 +7,33 @@ import type { Task } from "../../../../types/task";
 
 interface TaskCommandViewProps {
   task: Task;
-  projectName: string;
+  projectId: string;
   onComplete: () => void;
   onLater: () => void;
 }
 
 export default function TaskCommandView({
   task,
-  projectName,
+  projectId,
   onComplete,
   onLater,
 }: TaskCommandViewProps) {
   const { toast } = useToast();
-  const command = `vooster-ai를 사용해서 ${projectName}의 ${task.taskCode || task.id} 작업 수행하라`;
+  const command = `vooster-ai를 사용해서 ${projectId}의 ${task.taskCode || task.id} 작업 수행하라`;
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(command);
       toast({
         title: "복사되었습니다!",
-        duration: 5000,
+        duration: 3000,
       });
     } catch (error) {
       console.error("클립보드 복사 실패:", error);
       toast({
         title: "복사 실패",
         variant: "destructive",
-        duration: 5000,
+        duration: 3000,
       });
     }
   };

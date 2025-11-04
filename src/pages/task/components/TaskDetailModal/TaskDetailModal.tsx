@@ -8,7 +8,7 @@ interface TaskDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   task: Task;
-  projectName: string;
+  projectId: string;
   onUpdate: (taskId: string, content: string) => void;
   onStartTask: (taskId: string) => void;
 }
@@ -17,7 +17,7 @@ export default function TaskDetailModal({
   isOpen,
   onClose,
   task,
-  projectName,
+  projectId,
   onUpdate,
   onStartTask,
 }: TaskDetailModalProps) {
@@ -57,7 +57,7 @@ export default function TaskDetailModal({
         ) : (
           <TaskCommandView
             task={task}
-            projectName={projectName}
+            projectId={projectId}
             onComplete={handleComplete}
             onLater={handleLater}
           />

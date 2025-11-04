@@ -71,9 +71,9 @@ export function Header() {
           to="/"
           className="flex items-center gap-3 hover:opacity-80 transition-opacity"
         >
-          <img src="/logo.svg" alt="ATLAS Logo" className="w-12 h-12" />
+          <img src="/logo.svg" alt="ATrina Logo" className="w-12 h-12" />
           <div className="flex items-center gap-1">
-            <span className="font-bold text-xl text-gray-900">ATLAS</span>
+            <span className="font-bold text-xl text-gray-900">ATrina</span>
             <span className="text-gray-900 text-base">
               : AI-Efficient-development
             </span>
