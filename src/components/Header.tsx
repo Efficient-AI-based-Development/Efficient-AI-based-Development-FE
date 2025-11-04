@@ -161,7 +161,7 @@ export function Header() {
         {/* 메인 네비게이션 */}
         <nav className="p-4">
           <div className="mb-2 px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-            메인 메뉴
+            프로젝트 메뉴
           </div>
           {NAV_ITEMS.map((item) => (
             <button
