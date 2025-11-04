@@ -38,12 +38,12 @@ export default function McpPage() {
     if (selectedAssistant && !showCommands) {
       setShowCommands(true);
     } else {
-      router.navigate({ to: "/" });
+      router.navigate({ to: "/task" });
     }
   };
 
   return (
-    <div className="min-h-screen p-8 pt-6">
+    <div className="min-h-screen p-8 pt-8">
       <div className="max-w-7xl mx-auto">
         {/* 프로젝트명과 대시보드 버튼 */}
         <div className="flex items-center justify-between mb-8">
