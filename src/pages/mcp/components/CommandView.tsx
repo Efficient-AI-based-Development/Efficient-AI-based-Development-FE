@@ -20,7 +20,7 @@ export default function CommandView({ onCopyCommand }: CommandViewProps) {
         {COMMANDS.map((cmd) => (
           <div
             key={cmd.text}
-            className="bg-gray-900 text-white rounded-lg p-4 font-mono text-sm cursor-pointer"
+            className="bg-gray-900 text-white rounded-lg p-4 font-mono text-sm cursor-pointer hover:bg-gray-800 transition-colors"
             onClick={() => onCopyCommand(cmd.text)}
           >
             <div className="flex items-center justify-between">

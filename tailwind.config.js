@@ -3,6 +3,9 @@ export default {
     content: ["./index.html", "./src/**/*.{ts,tsx}"],
     theme: {
         extend: {
+            screens: {
+                tablet: "813px",
+            },
             colors: {
                 primary: "#7871FE",
                 secondary: "#4C2EFF",
