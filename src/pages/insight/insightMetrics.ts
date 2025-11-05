@@ -134,5 +134,6 @@ export function formatKoreanDate(iso?: string): string {
     month: "long",
     day: "numeric",
   });
+  // Format: "2025년 9월 22일"
   return f.format(d);
 }

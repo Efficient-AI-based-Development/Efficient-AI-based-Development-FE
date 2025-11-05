@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { CheckCircle2, Calendar, Target } from "lucide-react";
 import KpiCard from "./components/KpiCard";
 import LinkCard from "./components/LinkCard";
 import {
@@ -14,6 +15,7 @@ import {
 } from "./insightMetrics";
 import type { Task } from "../../types/task";
 import { useNavigate } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
 
 export default function InsightPage() {
   const navigate = useNavigate();
@@ -60,41 +62,63 @@ export default function InsightPage() {
   const qaDelta = diffNumber(today.qaDoneCount, yesterday?.qaDoneCount ?? null);
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-extrabold">프로젝트 인사이트</h1>
-      <p className="mt-2 text-gray-600">결과물은 로컬에서 확인하세요!</p>
+    <div className="min-h-screen bg-white px-24 py-10">
+      {/* Header with title, subtitle, and top-right button */}
+      <div className="relative mb-8 flex items-start justify-between">
+        <div className="flex-1 text-center">
+          <h1 className="text-4xl font-extrabold text-black">
+            프로젝트 인사이트
+          </h1>
+          <p className="mt-2 text-base text-black">
+            결과물은 로컬에서 확인하세요!
+          </p>
+        </div>
+        <div className="absolute right-0 top-0">
+          <Button
+            onClick={() => navigate({ to: "/task" })}
+            className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+          >
+            태스크 관리
+          </Button>
+        </div>
+      </div>
 
-      <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3">
+      {/* First row: KPI Cards */}
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3 md:items-stretch">
         <KpiCard
           title="Task 완료율"
           value={loading ? "-" : formatPercent(today.completionRate, 0)}
           sub={
             loading
-              ? "전일 대비 -"
+              ? "전날 대비 -"
               : completionDelta
-                ? `전일 대비 ${completionDelta.sign}${completionDelta.value}%`
-                : "전일 대비 -"
+                ? `전날 대비 ${completionDelta.sign}${completionDelta.value}%`
+                : "전날 대비 -"
           }
+          icon={<CheckCircle2 className="h-12 w-12 text-black" />}
         />
         <KpiCard
           title="마지막 진행 날짜"
           value={loading ? "-" : formatDOffset(today.lastProgressAt)}
           sub={loading ? "-" : formatKoreanDate(today.lastProgressAt)}
+          icon={<Calendar className="h-12 w-12 text-black" />}
         />
         <KpiCard
           title="QA 통과 Task"
           value={loading ? "-" : today.qaDoneCount}
           sub={
             loading
-              ? "전일 대비 -"
+              ? "전날 대비 -"
               : qaDelta
-                ? `전일 대비 ${qaDelta.sign}${qaDelta.value}`
-                : "전일 대비 -"
+                ? `전날 대비 ${qaDelta.sign}${qaDelta.value}`
+                : "전날 대비 -"
           }
+          icon={<Target className="h-12 w-12 text-black" />}
         />
       </div>
 
-      <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3">
+      {/* Second row: Link Cards */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:items-stretch">
         <LinkCard
           subtitle="PRD, SRS, User Story"
           title="문서 보러가기"
