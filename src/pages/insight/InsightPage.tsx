@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Calendar, Target } from "lucide-react";
+import { Calendar, CheckCheck } from "lucide-react";
 import KpiCard from "./components/KpiCard";
 import LinkCard from "./components/LinkCard";
 import CircularChart from "./components/CircularChart";
@@ -101,7 +101,7 @@ export default function InsightPage() {
           title="마지막 진행 날짜"
           value={loading ? "-" : formatDOffset(today.lastProgressAt)}
           sub={loading ? "-" : formatKoreanDate(today.lastProgressAt)}
-          icon={<Calendar className="h-12 w-12 text-black" />}
+          icon={<Calendar className="h-16 w-16 text-primary" />}
         />
         <KpiCard
           title="QA 통과 Task"
@@ -113,7 +113,7 @@ export default function InsightPage() {
                 ? `전날 대비 ${qaDelta.sign}${qaDelta.value}`
                 : "전날 대비 -"
           }
-          icon={<Target className="h-12 w-12 text-black" />}
+          icon={<CheckCheck className="h-16 w-16 text-primary" />}
         />
       </div>
 

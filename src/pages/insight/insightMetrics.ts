@@ -79,6 +79,35 @@ export function getSnapshot(dateKey: string): InsightMetricsSnapshot | null {
   }
 }
 
+// 최근 N일간의 일자별 태스크 활동 수 계산
+export function getRecentActivityCounts(
+  tasks: Task[],
+  days: number = 5,
+): number[] {
+  const counts: number[] = [];
+  const today = new Date();
+
+  for (let i = days - 1; i >= 0; i--) {
+    const targetDate = addDays(today, -i);
+    const targetDateKey = toKstDateKey(targetDate);
+
+    // 해당 날짜에 업데이트된 태스크 수 계산
+    const count = tasks.filter((task) => {
+      const taskWithTimestamps = task as unknown as TaskWithTimestamps;
+      if (!taskWithTimestamps.updatedAt) return false;
+
+      const taskDate = new Date(taskWithTimestamps.updatedAt);
+      const taskDateKey = toKstDateKey(taskDate);
+
+      return taskDateKey === targetDateKey;
+    }).length;
+
+    counts.push(count);
+  }
+
+  return counts;
+}
+
 // 숫자 증감 도우미(전일 대비)
 export function diffNumber(
   current: number,
