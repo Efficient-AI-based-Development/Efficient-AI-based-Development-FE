@@ -18,7 +18,7 @@ export default function LinkCard({
     <button
       type="button"
       onClick={onClick}
-      className="flex h-full min-h-[200px] w-full flex-col rounded-lg border border-gray-300 bg-white pt-6 pb-8 px-4 text-left"
+      className="flex h-full min-h-[200px] w-full flex-col rounded-lg border border-gray-300 bg-white pt-6 pb-8 px-4 text-left hover:bg-gray-100"
     >
       <div className="flex items-start justify-between">
         <div className="text-xl ml-2 font-normal text-black">{subtitle}</div>

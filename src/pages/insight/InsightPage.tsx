@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Calendar, Target } from "lucide-react";
+import { Calendar, Target } from "lucide-react";
 import KpiCard from "./components/KpiCard";
 import LinkCard from "./components/LinkCard";
+import CircularChart from "./components/CircularChart";
 import {
   computeMetrics,
   diffNumber,
@@ -84,7 +85,17 @@ export default function InsightPage() {
                 ? `전날 대비 ${completionDelta.sign}${completionDelta.value}%`
                 : "전날 대비 -"
           }
-          icon={<CheckCircle2 className="h-12 w-12 text-black" />}
+          icon={
+            loading ? (
+              <div className="h-16 w-16" />
+            ) : (
+              <CircularChart
+                value={Math.round(today.completionRate)}
+                size={64}
+                strokeWidth={6}
+              />
+            )
+          }
         />
         <KpiCard
           title="마지막 진행 날짜"
@@ -116,7 +127,9 @@ export default function InsightPage() {
         <LinkCard
           subtitle="AI와 채팅하며"
           title="Task 추가하기"
-          onClick={() => navigate({ to: "/task?new=1" })}
+          onClick={() => {
+            window.location.href = "/task?new=1";
+          }}
         />
         <LinkCard
           subtitle="서비스 이용방법"

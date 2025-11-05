@@ -11,7 +11,7 @@ export default function KpiCard({ title, value, sub, icon }: KpiCardProps) {
   return (
     <div
       className="grid h-full min-h-[200px] gap-4 rounded-lg border border-gray-300 bg-white p-6"
-      style={{ gridTemplateColumns: "1fr auto" }}
+      style={{ gridTemplateColumns: "3fr 1fr" }}
     >
       <div className="flex flex-col flex-1">
         <div className="text-xl font-semibold text-black">{title}</div>
@@ -27,7 +27,7 @@ export default function KpiCard({ title, value, sub, icon }: KpiCardProps) {
         </div>
       </div>
       {icon && (
-        <div className="flex items-center justify-end flex-shrink-0">
+        <div className="flex items-center justify-center flex-shrink-0">
           {icon}
         </div>
       )}
