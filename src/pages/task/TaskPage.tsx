@@ -222,14 +222,11 @@ export default function TaskPage() {
 
   return (
     <div className="min-h-screen p-8">
-      {/* 제목 및 인사이트 버튼 */}
-      <div className="flex items-center justify-between mb-6">
+      {/* 제목 */}
+      <div className="mb-6">
         <h1 className="text-3xl font-bold text-customBlack">
           종합설계프로젝트 1팀 의 대시보드
         </h1>
-        <button className="px-6 py-2 bg-customBlack text-white rounded-lg hover:bg-opacity-90 transition-colors">
-          인사이트 보기
-        </button>
       </div>
 
       {/* 검색바 + 통계 + 컬럼 테두리 박스 */}

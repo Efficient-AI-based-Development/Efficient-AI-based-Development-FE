@@ -15,7 +15,6 @@ import {
 } from "./insightMetrics";
 import type { Task } from "../../types/task";
 import { useNavigate } from "@tanstack/react-router";
-import { Button } from "@/components/ui/button";
 
 export default function InsightPage() {
   const navigate = useNavigate();
@@ -62,25 +61,15 @@ export default function InsightPage() {
   const qaDelta = diffNumber(today.qaDoneCount, yesterday?.qaDoneCount ?? null);
 
   return (
-    <div className="min-h-screen bg-white px-24 py-10">
-      {/* Header with title, subtitle, and top-right button */}
-      <div className="relative mb-8 flex items-start justify-between">
-        <div className="flex-1 text-center">
-          <h1 className="text-4xl font-extrabold text-black">
-            프로젝트 인사이트
-          </h1>
-          <p className="mt-2 text-base text-black">
-            결과물은 로컬에서 확인하세요!
-          </p>
-        </div>
-        <div className="absolute right-0 top-0">
-          <Button
-            onClick={() => navigate({ to: "/task" })}
-            className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
-          >
-            태스크 관리
-          </Button>
-        </div>
+    <div className="min-h-screen bg-white px-24 pt-14">
+      {/* Header with title and subtitle */}
+      <div className="mb-12 text-center">
+        <h1 className="text-5xl font-extrabold text-black">
+          프로젝트 인사이트
+        </h1>
+        <p className="mt-4 text-base text-black">
+          결과물은 로컬에서 확인하세요!
+        </p>
       </div>
 
       {/* First row: KPI Cards */}
