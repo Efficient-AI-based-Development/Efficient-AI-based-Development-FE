@@ -33,6 +33,18 @@ export default function TaskPage() {
     fetchTasks();
   }, []);
 
+  // URL 쿼리로 진입 시 추가 모달 자동 오픈 (?new=1)
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("new")) {
+        setIsModalOpen(true);
+      }
+    } catch {
+      // window 사용 불가 환경은 무시
+    }
+  }, []);
+
   // 태스크 상태 업데이트
   const handleTaskUpdate = async (
     taskId: string,
