@@ -160,6 +160,70 @@ export default function TaskPage() {
     }
   };
 
+  // 태스크 타입 업데이트 핸들러
+  const handleUpdateTaskType = async (taskId: string, type: TaskType) => {
+    try {
+      // 낙관적 업데이트
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task.id === taskId ? { ...task, type } : task,
+        ),
+      );
+
+      // selectedTask도 업데이트
+      if (selectedTask && selectedTask.id === taskId) {
+        setSelectedTask({ ...selectedTask, type });
+      }
+
+      // API 호출
+      await fetch(`/api/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ type }),
+      });
+    } catch (error) {
+      console.error("Failed to update task type:", error);
+      // 에러 발생 시 다시 불러오기
+      const response = await fetch("/api/tasks");
+      const data = await response.json();
+      setTasks(data);
+    }
+  };
+
+  // 태스크 중요도 업데이트 핸들러
+  const handleUpdateTaskPriority = async (taskId: string, priority: number) => {
+    try {
+      // 낙관적 업데이트
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task.id === taskId ? { ...task, priority } : task,
+        ),
+      );
+
+      // selectedTask도 업데이트
+      if (selectedTask && selectedTask.id === taskId) {
+        setSelectedTask({ ...selectedTask, priority });
+      }
+
+      // API 호출
+      await fetch(`/api/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ priority }),
+      });
+    } catch (error) {
+      console.error("Failed to update task priority:", error);
+      // 에러 발생 시 다시 불러오기
+      const response = await fetch("/api/tasks");
+      const data = await response.json();
+      setTasks(data);
+    }
+  };
+
   // 태스크 시작 (TODO → IN_PROGRESS)
   const handleStartTask = async (taskId: string) => {
     try {
@@ -264,6 +328,8 @@ export default function TaskPage() {
           task={selectedTask}
           projectId={PROJECT_ID}
           onUpdate={handleUpdateTaskContent}
+          onUpdateType={handleUpdateTaskType}
+          onUpdatePriority={handleUpdateTaskPriority}
           onStartTask={handleStartTask}
         />
       )}

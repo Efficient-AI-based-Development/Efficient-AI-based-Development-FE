@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import TaskDetailView from "./TaskDetailView";
 import TaskCommandView from "./TaskCommandView";
-import type { Task } from "../../../../types/task";
+import type { Task, TaskType } from "../../../../types/task";
 
 interface TaskDetailModalProps {
   isOpen: boolean;
@@ -10,6 +10,8 @@ interface TaskDetailModalProps {
   task: Task;
   projectId: string;
   onUpdate: (taskId: string, content: string) => void;
+  onUpdateType?: (taskId: string, type: TaskType) => void;
+  onUpdatePriority?: (taskId: string, priority: number) => void;
   onStartTask: (taskId: string) => void;
 }
 
@@ -19,6 +21,8 @@ export default function TaskDetailModal({
   task,
   projectId,
   onUpdate,
+  onUpdateType,
+  onUpdatePriority,
   onStartTask,
 }: TaskDetailModalProps) {
   const [step, setStep] = useState<"detail" | "command">("detail");
@@ -30,6 +34,14 @@ export default function TaskDetailModal({
 
   const handleUpdateContent = (content: string) => {
     onUpdate(task.id, content);
+  };
+
+  const handleUpdateType = (type: TaskType) => {
+    onUpdateType?.(task.id, type);
+  };
+
+  const handleUpdatePriority = (priority: number) => {
+    onUpdatePriority?.(task.id, priority);
   };
 
   const handleNext = () => {
@@ -52,6 +64,8 @@ export default function TaskDetailModal({
           <TaskDetailView
             task={task}
             onUpdate={handleUpdateContent}
+            onUpdateType={handleUpdateType}
+            onUpdatePriority={handleUpdatePriority}
             onNext={handleNext}
           />
         ) : (
