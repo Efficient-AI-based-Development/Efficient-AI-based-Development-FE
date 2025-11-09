@@ -183,5 +183,82 @@ export const mockTasks: Task[] = [
 ### 결과
 - 모든 설정 완료
 - 개발 환경 구축 완료`,
+    resultFiles: [
+      "vite.config.ts",
+      "tsconfig.json",
+      "tailwind.config.js",
+      "eslint.config.js",
+      "package.json",
+      "src/main.tsx",
+      "src/App.tsx",
+      ".gitignore",
+    ],
+    summary:
+      "프로젝트 초기 설정을 완료했습니다. Vite, React, TypeScript, Tailwind CSS를 설정하고, ESLint와 Prettier를 구성했습니다. 폴더 구조를 구성하고 Git 저장소를 초기화했습니다.",
+    duration: 1800, // 30분 (초 단위)
+    resultLogs: `# 작업 결과 로그
+
+## 작업 시작
+**시작 시간**: 2024-01-15 10:00:00
+
+## 실행된 명령어
+
+\`\`\`bash
+npm create vite@latest . -- --template react-ts
+npm install
+npm install -D tailwindcss postcss autoprefixer
+npx tailwindcss init -p
+npm install -D eslint @typescript-eslint/eslint-plugin
+npm install -D prettier
+git init
+\`\`\`
+
+## 생성된 파일
+
+1. **vite.config.ts**
+   - Vite 설정 파일 생성
+   - React 플러그인 설정
+
+2. **tsconfig.json**
+   - TypeScript 설정
+   - 엄격 모드 활성화
+
+3. **tailwind.config.js**
+   - Tailwind CSS 설정
+   - 컨텐츠 경로 설정
+
+4. **eslint.config.js**
+   - ESLint 설정
+   - TypeScript 규칙 적용
+
+5. **package.json**
+   - 프로젝트 의존성 정의
+   - 스크립트 설정
+
+6. **src/main.tsx**
+   - React 앱 진입점
+   - 기본 구조 생성
+
+7. **src/App.tsx**
+   - 메인 앱 컴포넌트
+   - 기본 레이아웃
+
+8. **.gitignore**
+   - Git 제외 파일 설정
+   - node_modules, dist 등 제외
+
+## 작업 완료
+**완료 시간**: 2024-01-15 10:30:00
+**소요 시간**: 30분
+
+## 결과
+✅ 모든 설정이 성공적으로 완료되었습니다.
+✅ 개발 환경이 정상적으로 구축되었습니다.
+✅ Git 저장소가 초기화되었습니다.
+
+## 다음 단계
+- 컴포넌트 구조 설계
+- 라우팅 설정
+- 상태 관리 도구 선택`,
   },
 ];
