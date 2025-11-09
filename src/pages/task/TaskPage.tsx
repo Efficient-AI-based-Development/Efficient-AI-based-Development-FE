@@ -253,6 +253,31 @@ export default function TaskPage() {
     }
   };
 
+  // 태스크 삭제 핸들러
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      // 낙관적 업데이트
+      setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
+
+      // selectedTask도 초기화
+      if (selectedTask && selectedTask.id === taskId) {
+        setSelectedTask(null);
+        setIsDetailModalOpen(false);
+      }
+
+      // API 호출
+      await fetch(`/api/tasks/${taskId}`, {
+        method: "DELETE",
+      });
+    } catch (error) {
+      console.error("Failed to delete task:", error);
+      // 에러 발생 시 다시 불러오기
+      const response = await fetch("/api/tasks");
+      const data = await response.json();
+      setTasks(data);
+    }
+  };
+
   // 검색 필터링
   const filteredTasks = tasks.filter((task) => {
     if (!searchQuery.trim()) return true;
@@ -331,6 +356,7 @@ export default function TaskPage() {
           onUpdateType={handleUpdateTaskType}
           onUpdatePriority={handleUpdateTaskPriority}
           onStartTask={handleStartTask}
+          onDelete={handleDeleteTask}
         />
       )}
     </div>

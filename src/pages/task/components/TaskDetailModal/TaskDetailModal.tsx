@@ -13,6 +13,7 @@ interface TaskDetailModalProps {
   onUpdateType?: (taskId: string, type: TaskType) => void;
   onUpdatePriority?: (taskId: string, priority: number) => void;
   onStartTask: (taskId: string) => void;
+  onDelete?: (taskId: string) => void;
 }
 
 export default function TaskDetailModal({
@@ -24,6 +25,7 @@ export default function TaskDetailModal({
   onUpdateType,
   onUpdatePriority,
   onStartTask,
+  onDelete,
 }: TaskDetailModalProps) {
   const [step, setStep] = useState<"detail" | "command">("detail");
 
@@ -44,6 +46,11 @@ export default function TaskDetailModal({
     onUpdatePriority?.(task.id, priority);
   };
 
+  const handleDelete = () => {
+    onDelete?.(task.id);
+    onClose();
+  };
+
   const handleNext = () => {
     setStep("command");
   };
@@ -59,7 +66,7 @@ export default function TaskDetailModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl min-h-[80vh] p-0 bg-white">
+      <DialogContent className="max-w-3xl min-h-[75vh] p-0 bg-white">
         {step === "detail" ? (
           <TaskDetailView
             task={task}
@@ -67,6 +74,7 @@ export default function TaskDetailModal({
             onUpdateType={handleUpdateType}
             onUpdatePriority={handleUpdatePriority}
             onNext={handleNext}
+            onDelete={handleDelete}
           />
         ) : (
           <TaskCommandView
