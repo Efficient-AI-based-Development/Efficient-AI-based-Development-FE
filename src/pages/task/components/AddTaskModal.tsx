@@ -6,11 +6,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import TaskTag from "./TaskTag";
+import TaskTagAndPrioritySelector from "./TaskTagAndPrioritySelector";
 import type { TaskType } from "../../../types/task";
 
 interface AddTaskModalProps {
@@ -196,64 +195,13 @@ export default function AddTaskModal({
         {/* 컨텐츠 */}
         <div className="px-6 pb-4 space-y-6">
           {/* 태그 선택과 중요도를 하나의 박스에 */}
-          <div className="border border-primary/30 rounded-lg p-4">
-            <div className="grid grid-cols-2 gap-8">
-              {/* 태그 선택 */}
-              <div className="flex flex-col gap-2">
-                <span className="text-sm font-semibold text-gray-700">
-                  태그
-                </span>
-                <div className="flex gap-3">
-                  <TaskTag
-                    type="DEV"
-                    isButton
-                    isSelected={selectedType === "DEV"}
-                    onClick={() => setSelectedType("DEV")}
-                  />
-                  <TaskTag
-                    type="DESIGN"
-                    isButton
-                    isSelected={selectedType === "DESIGN"}
-                    onClick={() => setSelectedType("DESIGN")}
-                  />
-                  <TaskTag
-                    type="DOCS"
-                    isButton
-                    isSelected={selectedType === "DOCS"}
-                    onClick={() => setSelectedType("DOCS")}
-                  />
-                </div>
-              </div>
-
-              {/* 중요도 */}
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-gray-700">
-                    중요도
-                  </span>
-                  <span className="font-bold text-red-500">{priority}</span>
-                </div>
-                <div className="space-y-1">
-                  <Slider
-                    value={[priority]}
-                    onValueChange={(value) => setPriority(value[0])}
-                    min={0}
-                    max={10}
-                    step={1}
-                  />
-                  <div className="relative w-full">
-                    <div className="flex justify-between pl-1">
-                      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                        <span key={num} className="text-xs text-gray-400">
-                          {num}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <TaskTagAndPrioritySelector
+            selectedType={selectedType}
+            priority={priority}
+            onTypeChange={setSelectedType}
+            onPriorityChange={setPriority}
+            disabled={false}
+          />
 
           {/* 안내 메시지 + 채팅 영역 */}
           <div className="h-[300px] overflow-y-auto space-y-3">

@@ -278,6 +278,76 @@ export default function TaskPage() {
     }
   };
 
+  // REVIEW 상태 거절 핸들러 (REVIEW → TODO)
+  const handleRejectTask = async (taskId: string) => {
+    try {
+      // 낙관적 업데이트
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task.id === taskId ? { ...task, status: "TODO" as const } : task,
+        ),
+      );
+
+      // selectedTask도 업데이트
+      if (selectedTask && selectedTask.id === taskId) {
+        setSelectedTask({ ...selectedTask, status: "TODO" });
+      }
+
+      // API 호출
+      await fetch(`/api/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: "TODO" }),
+      });
+    } catch (error) {
+      console.error("Failed to reject task:", error);
+      // 에러 발생 시 다시 불러오기
+      const response = await fetch("/api/tasks");
+      const data = await response.json();
+      setTasks(data);
+    }
+  };
+
+  // REVIEW 상태 수락 핸들러 (REVIEW → DONE)
+  const handleApproveTask = async (taskId: string) => {
+    try {
+      // 낙관적 업데이트
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task.id === taskId ? { ...task, status: "DONE" as const } : task,
+        ),
+      );
+
+      // selectedTask도 업데이트
+      if (selectedTask && selectedTask.id === taskId) {
+        setSelectedTask({ ...selectedTask, status: "DONE" });
+      }
+
+      // API 호출
+      await fetch(`/api/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: "DONE" }),
+      });
+    } catch (error) {
+      console.error("Failed to approve task:", error);
+      // 에러 발생 시 다시 불러오기
+      const response = await fetch("/api/tasks");
+      const data = await response.json();
+      setTasks(data);
+    }
+  };
+
+  // 추가하기 핸들러 (태스크 추가 모달 열기)
+  const handleAddMore = () => {
+    setIsDetailModalOpen(false);
+    setIsModalOpen(true);
+  };
+
   // 검색 필터링
   const filteredTasks = tasks.filter((task) => {
     if (!searchQuery.trim()) return true;
@@ -357,6 +427,9 @@ export default function TaskPage() {
           onUpdatePriority={handleUpdateTaskPriority}
           onStartTask={handleStartTask}
           onDelete={handleDeleteTask}
+          onReject={handleRejectTask}
+          onApprove={handleApproveTask}
+          onAddMore={handleAddMore}
         />
       )}
     </div>

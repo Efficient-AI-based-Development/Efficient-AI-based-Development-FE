@@ -34,11 +34,19 @@ export default function TaskTag({
     }
   };
 
-  const baseClasses = `${getTypeColor()} text-xs px-3 py-1 rounded-full font-semibold transition-colors`;
+  const isDisabled = isButton && !onClick;
+  const baseClasses = `${getTypeColor()} text-xs px-3 py-1 rounded-full font-semibold transition-colors ${
+    isDisabled ? "opacity-50 cursor-not-allowed" : ""
+  }`;
 
   if (isButton) {
     return (
-      <button onClick={onClick} className={baseClasses} type="button">
+      <button
+        onClick={onClick}
+        disabled={isDisabled}
+        className={baseClasses}
+        type="button"
+      >
         {type}#{number}
       </button>
     );

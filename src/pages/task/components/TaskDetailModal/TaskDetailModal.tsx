@@ -14,6 +14,9 @@ interface TaskDetailModalProps {
   onUpdatePriority?: (taskId: string, priority: number) => void;
   onStartTask: (taskId: string) => void;
   onDelete?: (taskId: string) => void;
+  onReject?: (taskId: string) => void;
+  onApprove?: (taskId: string) => void;
+  onAddMore?: () => void;
 }
 
 export default function TaskDetailModal({
@@ -26,6 +29,9 @@ export default function TaskDetailModal({
   onUpdatePriority,
   onStartTask,
   onDelete,
+  onReject,
+  onApprove,
+  onAddMore,
 }: TaskDetailModalProps) {
   const [step, setStep] = useState<"detail" | "command">("detail");
 
@@ -64,9 +70,24 @@ export default function TaskDetailModal({
     setStep("detail");
   };
 
+  const handleReject = () => {
+    onReject?.(task.id);
+    onClose();
+  };
+
+  const handleApprove = () => {
+    onApprove?.(task.id);
+    onClose();
+  };
+
+  const handleAddMore = () => {
+    onAddMore?.();
+    onClose();
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl min-h-[75vh] p-0 bg-white">
+      <DialogContent className="max-w-3xl min-h-[75vh] max-h-[85vh] p-0 bg-white flex flex-col">
         {step === "detail" ? (
           <TaskDetailView
             task={task}
@@ -75,6 +96,9 @@ export default function TaskDetailModal({
             onUpdatePriority={handleUpdatePriority}
             onNext={handleNext}
             onDelete={handleDelete}
+            onReject={handleReject}
+            onApprove={handleApprove}
+            onAddMore={handleAddMore}
           />
         ) : (
           <TaskCommandView
