@@ -160,6 +160,70 @@ export default function TaskPage() {
     }
   };
 
+  // 태스크 타입 업데이트 핸들러
+  const handleUpdateTaskType = async (taskId: string, type: TaskType) => {
+    try {
+      // 낙관적 업데이트
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task.id === taskId ? { ...task, type } : task,
+        ),
+      );
+
+      // selectedTask도 업데이트
+      if (selectedTask && selectedTask.id === taskId) {
+        setSelectedTask({ ...selectedTask, type });
+      }
+
+      // API 호출
+      await fetch(`/api/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ type }),
+      });
+    } catch (error) {
+      console.error("Failed to update task type:", error);
+      // 에러 발생 시 다시 불러오기
+      const response = await fetch("/api/tasks");
+      const data = await response.json();
+      setTasks(data);
+    }
+  };
+
+  // 태스크 중요도 업데이트 핸들러
+  const handleUpdateTaskPriority = async (taskId: string, priority: number) => {
+    try {
+      // 낙관적 업데이트
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task.id === taskId ? { ...task, priority } : task,
+        ),
+      );
+
+      // selectedTask도 업데이트
+      if (selectedTask && selectedTask.id === taskId) {
+        setSelectedTask({ ...selectedTask, priority });
+      }
+
+      // API 호출
+      await fetch(`/api/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ priority }),
+      });
+    } catch (error) {
+      console.error("Failed to update task priority:", error);
+      // 에러 발생 시 다시 불러오기
+      const response = await fetch("/api/tasks");
+      const data = await response.json();
+      setTasks(data);
+    }
+  };
+
   // 태스크 시작 (TODO → IN_PROGRESS)
   const handleStartTask = async (taskId: string) => {
     try {
@@ -187,6 +251,101 @@ export default function TaskPage() {
       const data = await response.json();
       setTasks(data);
     }
+  };
+
+  // 태스크 삭제 핸들러
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      // 낙관적 업데이트
+      setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
+
+      // selectedTask도 초기화
+      if (selectedTask && selectedTask.id === taskId) {
+        setSelectedTask(null);
+        setIsDetailModalOpen(false);
+      }
+
+      // API 호출
+      await fetch(`/api/tasks/${taskId}`, {
+        method: "DELETE",
+      });
+    } catch (error) {
+      console.error("Failed to delete task:", error);
+      // 에러 발생 시 다시 불러오기
+      const response = await fetch("/api/tasks");
+      const data = await response.json();
+      setTasks(data);
+    }
+  };
+
+  // REVIEW 상태 거절 핸들러 (REVIEW → TODO)
+  const handleRejectTask = async (taskId: string) => {
+    try {
+      // 낙관적 업데이트
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task.id === taskId ? { ...task, status: "TODO" as const } : task,
+        ),
+      );
+
+      // selectedTask도 업데이트
+      if (selectedTask && selectedTask.id === taskId) {
+        setSelectedTask({ ...selectedTask, status: "TODO" });
+      }
+
+      // API 호출
+      await fetch(`/api/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: "TODO" }),
+      });
+    } catch (error) {
+      console.error("Failed to reject task:", error);
+      // 에러 발생 시 다시 불러오기
+      const response = await fetch("/api/tasks");
+      const data = await response.json();
+      setTasks(data);
+    }
+  };
+
+  // REVIEW 상태 수락 핸들러 (REVIEW → DONE)
+  const handleApproveTask = async (taskId: string) => {
+    try {
+      // 낙관적 업데이트
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task.id === taskId ? { ...task, status: "DONE" as const } : task,
+        ),
+      );
+
+      // selectedTask도 업데이트
+      if (selectedTask && selectedTask.id === taskId) {
+        setSelectedTask({ ...selectedTask, status: "DONE" });
+      }
+
+      // API 호출
+      await fetch(`/api/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: "DONE" }),
+      });
+    } catch (error) {
+      console.error("Failed to approve task:", error);
+      // 에러 발생 시 다시 불러오기
+      const response = await fetch("/api/tasks");
+      const data = await response.json();
+      setTasks(data);
+    }
+  };
+
+  // 추가하기 핸들러 (태스크 추가 모달 열기)
+  const handleAddMore = () => {
+    setIsDetailModalOpen(false);
+    setIsModalOpen(true);
   };
 
   // 검색 필터링
@@ -264,7 +423,13 @@ export default function TaskPage() {
           task={selectedTask}
           projectId={PROJECT_ID}
           onUpdate={handleUpdateTaskContent}
+          onUpdateType={handleUpdateTaskType}
+          onUpdatePriority={handleUpdateTaskPriority}
           onStartTask={handleStartTask}
+          onDelete={handleDeleteTask}
+          onReject={handleRejectTask}
+          onApprove={handleApproveTask}
+          onAddMore={handleAddMore}
         />
       )}
     </div>

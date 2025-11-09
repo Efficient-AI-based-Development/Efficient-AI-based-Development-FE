@@ -62,7 +62,7 @@ export default function TaskCommandView({
 
       <div className="px-6 py-4 flex justify-end gap-3">
         <Button onClick={onLater} variant="outline" className="px-8">
-          나중에
+          이전
         </Button>
         <Button
           onClick={onComplete}
