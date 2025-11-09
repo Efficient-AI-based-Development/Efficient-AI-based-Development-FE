@@ -13,28 +13,21 @@ export default function ReviewActionButtons({
   onAddMore,
 }: ReviewActionButtonsProps) {
   return (
-    <div className="w-full flex justify-center gap-4">
-      <Button
-        onClick={onReject}
-        variant="outline"
-        className="px-8 border-red-500 text-red-500 hover:bg-red-50"
-      >
+    <div className="w-full flex justify-end gap-3">
+      <Button onClick={onReject} variant="outline" className="px-8">
         <X className="w-4 h-4 mr-2" />
         거절
       </Button>
+      <Button onClick={onAddMore} variant="outline" className="px-8">
+        <Plus className="w-4 h-4 mr-2" />
+        추가하기
+      </Button>
       <Button
         onClick={onApprove}
-        className="px-8 bg-green-500 text-white hover:bg-green-600 outline-none focus:outline-none focus-visible:outline-none"
+        className="px-8 bg-primary text-white hover:bg-primary/90 outline-none focus:outline-none focus-visible:outline-none"
       >
         <Check className="w-4 h-4 mr-2" />
         수락
-      </Button>
-      <Button
-        onClick={onAddMore}
-        className="px-8 bg-black text-white hover:bg-black/90 outline-none focus:outline-none focus-visible:outline-none"
-      >
-        <Plus className="w-4 h-4 mr-2" />
-        추가하기
       </Button>
     </div>
   );
