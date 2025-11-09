@@ -54,7 +54,7 @@ export default function TaskDetailModal({
   };
 
   const handleLater = () => {
-    onClose();
+    setStep("detail");
   };
 
   return (

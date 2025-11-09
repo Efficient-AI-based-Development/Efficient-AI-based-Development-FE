@@ -134,7 +134,7 @@ export default function TaskDetailView({
             <MDEditor
               value={editedContent}
               onChange={(val) => setEditedContent(val || "")}
-              height={300}
+              height={400}
               preview={showPreview ? "preview" : "edit"}
               hideToolbar={false}
               visibleDragbar={false}
@@ -149,7 +149,7 @@ export default function TaskDetailView({
             </button>
           </div>
         ) : (
-          <div className="border border-gray-300 rounded-lg p-6 overflow-y-auto min-h-[300px] max-h-[300px]">
+          <div className="border border-gray-300 rounded-lg p-6 overflow-y-auto min-h-[350px]">
             {task.content ? (
               <ReactMarkdown components={markdownComponents}>
                 {task.content}
