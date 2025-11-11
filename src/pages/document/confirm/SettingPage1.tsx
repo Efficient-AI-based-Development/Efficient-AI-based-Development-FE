@@ -92,8 +92,18 @@ export default function SettingPage1() {
 
   const handleComplete = () => {
     if (!isFormValid) return;
-    // 세팅 페이지2로 이동
-    navigate({ to: "/document/setting2" });
+    // 세팅 페이지2로 이동 (설정 정보 전달)
+    navigate({
+      to: "/document/setting2",
+      search: {
+        projectName,
+        mainColor,
+        pageCount,
+        featureCount,
+        aiModel,
+        techStack: techStack.join(","),
+      },
+    });
   };
 
   return (
