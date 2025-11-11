@@ -114,7 +114,7 @@ export default function SettingPage1() {
                 <div className="h-2 bg-[#D9D9D9] rounded-full overflow-hidden relative w-[500px]">
                   <div
                     className="h-full bg-[#7871FE] rounded-full transition-all"
-                    style={{ width: "15%" }}
+                    style={{ width: "18%" }}
                   />
                 </div>
               </div>
