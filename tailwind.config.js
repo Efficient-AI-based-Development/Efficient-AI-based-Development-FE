@@ -13,7 +13,7 @@ export default {
         primary: "#7871FE",
         secondary: "#4C2EFF",
         customBlack: "#1E1E1E",
-        gray: "#7C7C7C",
+        customGray: "#7C7C7C",
       },
       keyframes: {
         "bounce-subtle": {

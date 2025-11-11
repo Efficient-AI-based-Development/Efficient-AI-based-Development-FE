@@ -42,7 +42,7 @@ export default function HomePage() {
       <h1 className="text-6xl font-semibold text-center -translate-y-3">
         무엇을 만들어볼까요?
       </h1>
-      <div className="mt-8 text-2xl text-gray text-center z-10">
+      <div className="mt-8 text-2xl text-CustomGray text-center z-10">
         AI Development와 함께 체계적인 프로젝트를 만들어보세요.
       </div>
 

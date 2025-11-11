@@ -11,6 +11,7 @@ const DocumentPage = lazy(() => import("@/pages/document/DocumentPage"));
 const ConfirmPage = lazy(() => import("@/pages/document/confirm/SettingPage1"));
 const SettingPage2 = lazy(() => import("@/pages/document/confirm/SettingPage2"));
 const SettingPage3 = lazy(() => import("@/pages/document/confirm/SettingPage3"));
+const CheckPage = lazy(() => import("@/pages/document/confirm/CheckPage"));
 const ChatPage = lazy(() => import("@/pages/document/chat/ChatPage"));
 const TaskPage = lazy(() => import("@/pages/task/TaskPage"));
 const InsightPage = lazy(() => import("@/pages/insight/InsightPage"));
@@ -69,6 +70,21 @@ const documentConfirmRoute = createRoute({
 const documentSetting2Route = createRoute({
   getParentRoute: () => rootRoute,
   path: "/document/setting2",
+  validateSearch: (search: Record<string, unknown>): {
+    projectName?: string;
+    mainColor?: string;
+    pageCount?: string;
+    featureCount?: string;
+    aiModel?: string;
+    techStack?: string;
+  } => ({
+    projectName: search.projectName as string | undefined,
+    mainColor: search.mainColor as string | undefined,
+    pageCount: search.pageCount as string | undefined,
+    featureCount: search.featureCount as string | undefined,
+    aiModel: search.aiModel as string | undefined,
+    techStack: search.techStack as string | undefined,
+  }),
   component: () => (
     <Suspense fallback={<div className="p-6"> 로딩중...</div>}>
       <SettingPage2 />
@@ -82,6 +98,16 @@ const documentSetting3Route = createRoute({
   component: () => (
     <Suspense fallback={<div className="p-6"> 로딩중...</div>}>
       <SettingPage3 />
+    </Suspense>
+  ),
+});
+
+const documentCheckRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/document/check",
+  component: () => (
+    <Suspense fallback={<div className="p-6"> 로딩중...</div>}>
+      <CheckPage />
     </Suspense>
   ),
 });
@@ -177,6 +203,7 @@ export const routeTree = rootRoute.addChildren([
   documentConfirmRoute,
   documentSetting2Route,
   documentSetting3Route,
+  documentCheckRoute,
   documentChatRoute,
   taskRoute,
   insightRoute,
