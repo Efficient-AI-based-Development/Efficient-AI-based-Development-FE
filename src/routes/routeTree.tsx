@@ -8,6 +8,9 @@ import { RootLayout, NotFound } from "./root";
 
 const HomePage = lazy(() => import("@/pages/home/HomePage"));
 const DocumentPage = lazy(() => import("@/pages/document/DocumentPage"));
+const ConfirmPage = lazy(() => import("@/pages/document/confirm/SettingPage1"));
+const SettingPage2 = lazy(() => import("@/pages/document/confirm/SettingPage2"));
+const ChatPage = lazy(() => import("@/pages/document/chat/ChatPage"));
 const TaskPage = lazy(() => import("@/pages/task/TaskPage"));
 const InsightPage = lazy(() => import("@/pages/insight/InsightPage"));
 
@@ -41,6 +44,46 @@ const documentRoute = createRoute({
   component: () => (
     <Suspense fallback={<div className="p-6"> 로딩중...</div>}>
       <DocumentPage />
+    </Suspense>
+  ),
+});
+
+const documentConfirmRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/document/confirm",
+  validateSearch: (search: Record<string, unknown>): {
+    initialMessage?: string;
+  } => ({
+    initialMessage: search.initialMessage
+      ? (search.initialMessage as string)
+      : undefined,
+  }),
+  component: () => (
+    <Suspense fallback={<div className="p-6"> 로딩중...</div>}>
+      <ConfirmPage />
+    </Suspense>
+  ),
+});
+
+const documentSetting2Route = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/document/setting2",
+  component: () => (
+    <Suspense fallback={<div className="p-6"> 로딩중...</div>}>
+      <SettingPage2 />
+    </Suspense>
+  ),
+});
+
+const documentChatRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/document/chat",
+  validateSearch: (search: Record<string, unknown>) => ({
+    initialMessage: (search.initialMessage as string) || undefined,
+  }),
+  component: () => (
+    <Suspense fallback={<div className="p-6"> 로딩중...</div>}>
+      <ChatPage />
     </Suspense>
   ),
 });
@@ -120,6 +163,9 @@ const accountRoute = createRoute({
 export const routeTree = rootRoute.addChildren([
   homeRoute,
   documentRoute,
+  documentConfirmRoute,
+  documentSetting2Route,
+  documentChatRoute,
   taskRoute,
   insightRoute,
   projectSettingRoute,
