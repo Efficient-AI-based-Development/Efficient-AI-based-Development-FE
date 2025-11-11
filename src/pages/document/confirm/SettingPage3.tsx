@@ -67,7 +67,10 @@ export default function SettingPage3() {
         {/* 진행 바 */}
         <div className="flex flex-col gap-4 mb-8">
           <div className="flex justify-start items-center gap-4">
-            <button className="text-gray-400 hover:text-gray-600 text-3xl">
+            <button 
+              onClick={() => navigate({ to: "/document/setting2" })}
+              className="text-gray-400 hover:text-gray-600 text-3xl"
+            >
               &lt;
             </button>
             <div className="flex flex-col gap-2">
@@ -81,9 +84,6 @@ export default function SettingPage3() {
                 />
               </div>
             </div>
-            <button className="text-gray-400 hover:text-gray-600 text-3xl">
-              &gt;
-            </button>
           </div>
 
           {/* 탭 버튼 */}

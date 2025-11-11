@@ -110,40 +110,46 @@ export default function SettingPage1() {
     <div className="bg-white p-8 px-16">
       <div className="mx-auto mt-4">
         {/* 인사말 박스 */}
-        {initialMessage && (
-          <div className="flex flex-col gap-4 mb-8">
-            {/* 진행 바 */}
-            <div className="flex justify-start items-center gap-4">
-              <button className="text-gray-400 hover:text-gray-600 text-3xl">
-                &lt;
-              </button>
-              <div className="flex flex-col gap-2">
-                <div className="text-2xl font-medium text-gray-700">
-                  기초 세팅
-                </div>
-                <div className="h-2 bg-[#D9D9D9] rounded-full overflow-hidden relative w-[500px]">
-                  <div
-                    className="h-full bg-[#7871FE] rounded-full transition-all"
-                    style={{ width: "18%" }}
-                  />
-                </div>
+        <div className="flex flex-col gap-4 mb-8">
+          {/* 진행 바 */}
+          <div className="flex justify-start items-center gap-4">
+            <button 
+              onClick={() => navigate({ to: "/document" })}
+              className="text-gray-400 hover:text-gray-600 text-[30px]"
+            >
+              &lt;
+            </button>
+            <div className="flex flex-col gap-2">
+              <div className="text-2xl font-medium text-gray-700">
+                기초 세팅
               </div>
-              <button className="text-gray-400 hover:text-gray-600 text-3xl">
-                &gt;
-              </button>
-            </div>
-            <div className="flex justify-start">
-              <div className="bg-[#7871FE]/30 rounded-2xl p-8 border border-[#7871FE]/30 mt-16 ml-8">
-              <p className="font-semibold text-lg leading-relaxed">
-                {initialMessage}을(를) 하실거군요!
-              </p>
-              <p className="font-semibold text-lg leading-relaxed">
-                만들고 싶은 프로젝트를 제가 이해할 수 있도록 상세히 설명해 주세요.
-              </p>
+              <div className="h-2 bg-[#D9D9D9] rounded-full overflow-hidden relative w-[500px]">
+                <div
+                  className="h-full bg-[#7871FE] rounded-full transition-all"
+                  style={{ width: "19%" }}
+                />
               </div>
             </div>
           </div>
-        )}
+          <div className="flex justify-start">
+            <div className="bg-[#7871FE]/30 rounded-2xl p-8 border border-[#7871FE]/30 mt-16 ml-8">
+              {initialMessage ? (
+                <>
+                  <p className="font-semibold text-lg leading-relaxed">
+                    {initialMessage}을(를) 하실거군요!
+                  </p>
+                  <p className="font-semibold text-lg leading-relaxed">
+                    만들고 싶은 프로젝트를 제가 이해할 수 있도록 상세히 설명해 주세요.
+                  </p>
+                </>
+              ) : (
+                <p className="font-semibold text-lg leading-relaxed">
+                  만들고 싶은 프로젝트를 제가 이해할 수 있도록 상세히 설명해 주세요.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
 
         {/* 폼 섹션 */}
         <div className="flex justify-end mb-8 mt-14 mr-8">

@@ -104,7 +104,10 @@ export default function SettingPage2() {
       {/* 진행 바 섹션 - 상단 고정 */}
       <div className="flex-shrink-0 pt-4 pb-4">
         <div className="flex justify-start items-center gap-4">
-          <button className="text-gray-400 hover:text-gray-600 text-3xl">
+          <button 
+            onClick={() => navigate({ to: "/document/confirm" })}
+            className="text-gray-400 hover:text-gray-600 text-3xl"
+          >
             &lt;
           </button>
           <div className="flex flex-col gap-2">
@@ -118,9 +121,6 @@ export default function SettingPage2() {
               />
             </div>
           </div>
-          <button className="text-gray-400 hover:text-gray-600 text-3xl">
-            &gt;
-          </button>
         </div>
       </div>
 
