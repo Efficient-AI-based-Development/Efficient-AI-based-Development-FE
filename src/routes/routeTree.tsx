@@ -10,6 +10,7 @@ const HomePage = lazy(() => import("@/pages/home/HomePage"));
 const DocumentPage = lazy(() => import("@/pages/document/DocumentPage"));
 const ConfirmPage = lazy(() => import("@/pages/document/confirm/SettingPage1"));
 const SettingPage2 = lazy(() => import("@/pages/document/confirm/SettingPage2"));
+const SettingPage3 = lazy(() => import("@/pages/document/confirm/SettingPage3"));
 const ChatPage = lazy(() => import("@/pages/document/chat/ChatPage"));
 const TaskPage = lazy(() => import("@/pages/task/TaskPage"));
 const InsightPage = lazy(() => import("@/pages/insight/InsightPage"));
@@ -71,6 +72,16 @@ const documentSetting2Route = createRoute({
   component: () => (
     <Suspense fallback={<div className="p-6"> 로딩중...</div>}>
       <SettingPage2 />
+    </Suspense>
+  ),
+});
+
+const documentSetting3Route = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/document/setting3",
+  component: () => (
+    <Suspense fallback={<div className="p-6"> 로딩중...</div>}>
+      <SettingPage3 />
     </Suspense>
   ),
 });
@@ -165,6 +176,7 @@ export const routeTree = rootRoute.addChildren([
   documentRoute,
   documentConfirmRoute,
   documentSetting2Route,
+  documentSetting3Route,
   documentChatRoute,
   taskRoute,
   insightRoute,
