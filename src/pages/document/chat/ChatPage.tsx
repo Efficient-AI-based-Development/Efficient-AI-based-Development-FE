@@ -55,7 +55,7 @@ export default function ChatPage() {
           hasNavigatedRef.current = true;
           // 세팅 페이지로 이동
           navigate({
-            to: "/document/confirm",
+            to: "/document/setting1",
             search: { initialMessage },
           });
         }

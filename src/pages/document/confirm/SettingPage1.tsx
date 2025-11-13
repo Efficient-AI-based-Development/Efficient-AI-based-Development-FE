@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useSearch, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { Input } from "@/components/ui/input";
 
 const TECH_STACK_OPTIONS = [
@@ -25,7 +25,6 @@ const AI_MODEL_OPTIONS = [
 const NUMBER_OPTIONS = Array.from({ length: 30 }, (_, i) => (i + 1).toString());
 
 export default function SettingPage1() {
-  const search = useSearch({ from: "/document/confirm" });
   const navigate = useNavigate();
   const [projectName, setProjectName] = useState("");
   const [mainColor, setMainColor] = useState("#7871FE");
@@ -41,8 +40,6 @@ export default function SettingPage1() {
   const aiModelRef = useRef<HTMLDivElement>(null);
   const pageCountRef = useRef<HTMLDivElement>(null);
   const featureCountRef = useRef<HTMLDivElement>(null);
-
-  const initialMessage = search?.initialMessage;
 
   // 외부 클릭 감지하여 드롭다운 닫기
   useEffect(() => {
@@ -120,7 +117,7 @@ export default function SettingPage1() {
               &lt;
             </button>
             <div className="flex flex-col gap-2">
-              <div className="text-2xl font-medium text-gray-700">
+              <div className="text-xl font-semibold text-gray-700">
                 기초 세팅
               </div>
               <div className="h-2 bg-[#D9D9D9] rounded-full overflow-hidden relative w-[500px]">
@@ -132,34 +129,26 @@ export default function SettingPage1() {
             </div>
           </div>
           <div className="flex justify-start">
-            <div className="bg-[#7871FE]/30 rounded-2xl p-8 border border-[#7871FE]/30 mt-16 ml-8">
-              {initialMessage ? (
-                <>
-                  <p className="font-semibold text-sm leading-relaxed">
-                    {initialMessage}을(를) 하실거군요!
-                  </p>
-                  <p className="font-semibold text-lg leading-relaxed">
-                    만들고 싶은 프로젝트를 제가 이해할 수 있도록 상세히 설명해 주세요.
-                  </p>
-                </>
-              ) : (
-                <p className="font-semibold text-lg leading-relaxed">
-                  만들고 싶은 프로젝트를 제가 이해할 수 있도록 상세히 설명해 주세요.
-                </p>
-              )}
+            <div className="bg-[#7871FE]/30 rounded-2xl p-8 border border-[#7871FE]/30 mt-20 ml-8">
+              <p className="font-semibold leading-relaxed">
+                좋아요! 함께 프로젝트를 만들어볼게요.
+              </p>
+              <p className="font-semibold leading-relaxed">
+                만들고 싶은 프로젝트를 제가 이해할 수 있도록 상세히 설명해 주세요.
+              </p>
             </div>
           </div>
         </div>
 
         {/* 폼 섹션 */}
-        <div className="flex justify-end mb-8 mt-14 mr-8">
-          <div className="border-2 border-[#7871FE] rounded-2xl p-10 w-2/3">
+        <div className="flex justify-end mb-8 mt-28 mr-8">
+          <div className="border-2 border-[#7871FE] rounded-2xl p-14 w-2/3">
             <div className="grid grid-cols-2 gap-8">
             {/* 왼쪽 열 */}
-            <div className="space-y-6">
+            <div className="space-y-8">
               {/* 1. 프로젝트 이름 */}
               <div>
-                <label className="block text-lg font-semibold text-gray-700 mb-2">
+                <label className="block font-semibold text-gray-700 mb-2">
                   1. 프로젝트 이름 :
                 </label>
                 <Input
@@ -173,7 +162,7 @@ export default function SettingPage1() {
 
               {/* 2. 메인 컬러 */}
               <div>
-                <label className="block text-lg font-semibold text-gray-700 mb-2">
+                <label className="block font-semibold text-gray-700 mb-2">
                   2. 메인 컬러 :
                 </label>
                 <div className="relative">
@@ -203,7 +192,7 @@ export default function SettingPage1() {
 
               {/* 3. 페이지 수 */}
               <div className="relative" ref={pageCountRef}>
-                <label className="block text-lg font-semibold text-gray-700 mb-2">
+                <label className="block font-semibold text-gray-700 mb-2">
                   3. 페이지 수 :
                 </label>
                 <div className="relative">
@@ -251,10 +240,10 @@ export default function SettingPage1() {
             </div>
 
             {/* 오른쪽 열 */}
-            <div className="space-y-6">
+            <div className="space-y-8">
               {/* 4. 구현할 기능 수 */}
               <div className="relative" ref={featureCountRef}>
-                <label className="block text-lg font-semibold text-gray-700 mb-2">
+                <label className="block font-semibold text-gray-700 mb-2">
                   4. 구현할 기능 수 :
                 </label>
                 <div className="relative">
@@ -302,7 +291,7 @@ export default function SettingPage1() {
 
               {/* 5. AI 모델 */}
               <div className="relative" ref={aiModelRef}>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block font-semibold text-gray-700 mb-2">
                   5. AI 모델 :
                 </label>
                 <div className="relative">
@@ -350,7 +339,7 @@ export default function SettingPage1() {
 
               {/* 6. 기술 스택 */}
               <div className="relative" ref={techStackRef}>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block font-semibold text-gray-700 mb-2">
                   6. 기술 스택 :
                 </label>
                 <div className="relative">

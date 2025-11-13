@@ -50,9 +50,9 @@ const documentRoute = createRoute({
   ),
 });
 
-const documentConfirmRoute = createRoute({
+const documentSetting1Route = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/document/confirm",
+  path: "/document/setting1",
   validateSearch: (search: Record<string, unknown>): {
     initialMessage?: string;
   } => ({
@@ -200,7 +200,7 @@ const accountRoute = createRoute({
 export const routeTree = rootRoute.addChildren([
   homeRoute,
   documentRoute,
-  documentConfirmRoute,
+  documentSetting1Route,
   documentSetting2Route,
   documentSetting3Route,
   documentCheckRoute,

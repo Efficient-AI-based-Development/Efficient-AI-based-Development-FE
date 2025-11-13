@@ -6,7 +6,7 @@ export default function DocumentPage() {
 
   useEffect(() => {
     // 초기 세팅 페이지로 리다이렉트
-    navigate({ to: "/document/confirm" });
+    navigate({ to: "/document/setting1" });
   }, [navigate]);
 
   return (

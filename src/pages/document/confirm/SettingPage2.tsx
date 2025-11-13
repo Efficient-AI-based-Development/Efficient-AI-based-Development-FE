@@ -105,7 +105,7 @@ export default function SettingPage2() {
       <div className="flex-shrink-0 pt-4 pb-4">
         <div className="flex justify-start items-center gap-4">
           <button 
-            onClick={() => navigate({ to: "/document/confirm" })}
+            onClick={() => navigate({ to: "/document/setting1" })}
             className="text-gray-400 hover:text-gray-600 text-3xl"
           >
             &lt;
