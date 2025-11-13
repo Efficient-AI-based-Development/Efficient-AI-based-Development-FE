@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { mockData } from "./mocks/mockData";
+import { markdownComponents } from "@/pages/task/components/TaskDetailModal/markdownComponents";
 
 export default function CheckPage() {
   const navigate = useNavigate();
@@ -31,7 +34,7 @@ export default function CheckPage() {
               &lt;
             </button>
             <div className="flex flex-col gap-2">
-              <div className="text-2xl font-medium text-gray-600">
+              <div className="text-xl font-semibold text-gray-600">
                 PRD / UserStory / SRS 최종 확인
               </div>
               <div className="h-2 bg-[#D9D9D9] rounded-full overflow-hidden relative w-[500px]">
@@ -82,10 +85,14 @@ export default function CheckPage() {
         <div className="flex flex-col h-[calc(100vh-370px)]">
           {/* 문서 표시 영역 */}
           <div className="flex-1 bg-white border-2 border-[#7871FE] rounded-2xl p-8 overflow-y-auto">
-            <div className="text-gray-700 space-y-4">
-              <h2 className="text-2xl font-bold mb-4">{activeTab} 문서</h2>
-              <div className="prose max-w-none whitespace-pre-line text-base leading-relaxed">
-                {mockData[activeTab]}
+            <div className="text-gray-700">
+              <div className="prose max-w-none">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={markdownComponents}
+                >
+                  {mockData[activeTab]}
+                </ReactMarkdown>
               </div>
             </div>
           </div>
