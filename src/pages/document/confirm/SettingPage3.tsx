@@ -1,6 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowUp } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { mockData } from "./mocks/mockData";
+import { markdownComponents } from "@/pages/task/components/TaskDetailModal/markdownComponents";
 
 interface Message {
   id: string;
@@ -74,7 +78,7 @@ export default function SettingPage3() {
               &lt;
             </button>
             <div className="flex flex-col gap-2">
-              <div className="text-2xl font-medium text-gray-600">
+              <div className="text-xl font-semibold text-gray-600">
                 PRD / UserStory / SRS 생성 및 수정
               </div>
               <div className="h-2 bg-[#D9D9D9] rounded-full overflow-hidden relative w-[500px]">
@@ -126,15 +130,14 @@ export default function SettingPage3() {
           {/* 왼쪽 패널 - 문서 표시 영역 */}
           <div className="flex-1 bg-[#7871FE]/15 rounded-2xl p-8 flex flex-col">
             <div className="flex-1 overflow-y-auto">
-              <div className="text-gray-700 space-y-4">
-                <h2 className="text-2xl font-bold mb-4">{activeTab} 문서</h2>
+              <div className="text-gray-700">
                 <div className="prose max-w-none">
-                  <p className="text-base leading-relaxed">
-                    {activeTab} 문서 내용이 여기에 표시됩니다. 생성된 문서의 전체 내용을 확인할 수 있습니다.
-                  </p>
-                  <p className="text-base leading-relaxed mt-4">
-                    수정이 필요한 부분이 있다면 오른쪽 패널에서 수정 요청을 입력해 주세요.
-                  </p>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={markdownComponents}
+                  >
+                    {mockData[activeTab]}
+                  </ReactMarkdown>
                 </div>
               </div>
             </div>
