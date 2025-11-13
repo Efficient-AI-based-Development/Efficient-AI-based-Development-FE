@@ -135,7 +135,7 @@ export default function SettingPage1() {
             <div className="bg-[#7871FE]/30 rounded-2xl p-8 border border-[#7871FE]/30 mt-16 ml-8">
               {initialMessage ? (
                 <>
-                  <p className="font-semibold text-lg leading-relaxed">
+                  <p className="font-semibold text-sm leading-relaxed">
                     {initialMessage}을(를) 하실거군요!
                   </p>
                   <p className="font-semibold text-lg leading-relaxed">
@@ -302,7 +302,7 @@ export default function SettingPage1() {
 
               {/* 5. AI 모델 */}
               <div className="relative" ref={aiModelRef}>
-                <label className="block text-lg font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   5. AI 모델 :
                 </label>
                 <div className="relative">
@@ -350,7 +350,7 @@ export default function SettingPage1() {
 
               {/* 6. 기술 스택 */}
               <div className="relative" ref={techStackRef}>
-                <label className="block text-lg font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   6. 기술 스택 :
                 </label>
                 <div className="relative">
@@ -460,7 +460,7 @@ export default function SettingPage1() {
             <button
               onClick={handleComplete}
               disabled={!isFormValid}
-              className={`px-8 py-4 rounded-2xl transition-colors font-semibold text-lg ${
+              className={`px-8 py-4 rounded-2xl transition-colors font-semibold text-sm ${
                 isFormValid
                   ? "!bg-[#7871FE] !text-white hover:bg-[#6a63d4] cursor-pointer"
                   : "!bg-[#D9D9D9] !text-black"
