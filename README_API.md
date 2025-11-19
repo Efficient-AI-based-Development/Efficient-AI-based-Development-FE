@@ -2,7 +2,19 @@
 
 ## 📡 API 클라이언트 설정
 
-프로젝트에서 백엔드 API(`http://34.61.144.150:8000`)와 통신하기 위한 axios 클라이언트가 설정되어 있습니다.
+프로젝트에서 백엔드 API와 통신하기 위한 axios 클라이언트가 설정되어 있습니다.
+
+### 환경 변수 설정
+
+프로젝트 루트에 `.env` 파일을 생성하고 다음 내용을 추가하세요:
+
+```env
+VITE_API_BASE_URL=http://34.61.144.150:8000
+```
+
+> **참고**: Vite에서는 환경 변수에 `VITE_` 접두사를 붙여야 클라이언트 코드에서 접근할 수 있습니다.
+
+`.env.example` 파일이 있으니 참고하세요. 환경 변수가 설정되지 않은 경우 기본값(`http://34.61.144.150:8000`)이 사용됩니다.
 
 ## 🚀 사용 방법
 
@@ -168,9 +180,24 @@ function TaskList() {
 
 ## ⚙️ 설정 정보
 
-- **Base URL**: `http://34.61.144.150:8000`
+- **Base URL**: 환경 변수 `VITE_API_BASE_URL`에서 가져옴 (기본값: `http://34.61.144.150:8000`)
 - **Timeout**: 10초
 - **Content-Type**: `application/json`
+
+### 환경 변수 변경
+
+다른 환경(개발/스테이징/프로덕션)에서 다른 API URL을 사용하려면:
+
+1. `.env` 파일 수정
+2. 또는 `.env.local`, `.env.development`, `.env.production` 파일 생성
+
+```env
+# .env.development
+VITE_API_BASE_URL=http://localhost:8000
+
+# .env.production
+VITE_API_BASE_URL=https://api.production.com
+```
 
 ## 🔧 인터셉터
 

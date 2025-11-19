@@ -1,7 +1,8 @@
 import axios from "axios";
 
-// API 기본 URL 설정
-const API_BASE_URL = "http://34.61.144.150:8000";
+// API 기본 URL 설정 (환경 변수에서 가져오기)
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://34.61.144.150:8000";
 
 // axios 인스턴스 생성
 export const apiClient = axios.create({
