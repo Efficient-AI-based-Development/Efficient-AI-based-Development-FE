@@ -4,6 +4,8 @@ import type {
   CreateTaskResponse,
   ListTasksResponse,
   GetTaskResponse,
+  UpdateTaskRequest,
+  UpdateTaskResponse,
   ApiTaskType,
   ApiTaskStatus,
   ApiTaskItem,
@@ -213,6 +215,74 @@ export async function getTask(taskId: number): Promise<GetTaskResponse> {
   } catch (error) {
     const axiosError = error as AxiosError;
     console.error("[API] 태스크 상세 조회 실패");
+    console.error("[API] 에러 상세:", axiosError);
+    if (axiosError.response) {
+      console.error("[API] 응답 Status:", axiosError.response.status);
+      console.error("[API] 응답 Data:", axiosError.response.data);
+    } else if (axiosError.request) {
+      console.error("[API] 요청은 전송되었으나 응답을 받지 못함");
+      console.error("[API] 요청 정보:", axiosError.request);
+    } else {
+      console.error("[API] 요청 설정 중 에러:", axiosError.message);
+    }
+    throw axiosError;
+  }
+}
+
+/**
+ * 태스크 수정 API 호출
+ * PATCH /api/v1/tasks/{task_id}
+ */
+export async function updateTask(
+  taskId: number,
+  data: UpdateTaskRequest,
+): Promise<UpdateTaskResponse> {
+  const url = `/api/v1/tasks/${taskId}`;
+
+  // type이 TaskType인 경우 API 타입으로 변환
+  const requestBody: UpdateTaskRequest = { ...data };
+  if (
+    data.type &&
+    typeof data.type === "string" &&
+    ["DEV", "DESIGN", "DOCS"].includes(data.type)
+  ) {
+    requestBody.type = mapTaskTypeToApiType(data.type as TaskType);
+  }
+
+  // status가 TaskStatus인 경우 API status로 변환
+  if (
+    data.status &&
+    typeof data.status === "string" &&
+    ["TODO", "IN_PROGRESS", "REVIEW", "DONE"].includes(data.status)
+  ) {
+    const statusMapping: Record<string, ApiTaskStatus> = {
+      TODO: "todo",
+      IN_PROGRESS: "in_progress",
+      REVIEW: "review",
+      DONE: "done",
+    };
+    requestBody.status = statusMapping[data.status];
+  }
+
+  console.log("[API] 태스크 수정 요청 시작");
+  console.log("[API] Task ID:", taskId);
+  console.log("[API] 요청 URL:", url);
+  console.log("[API] 요청 Body:", JSON.stringify(requestBody, null, 2));
+
+  try {
+    const response = await apiClient.patch<UpdateTaskResponse>(
+      url,
+      requestBody,
+    );
+
+    console.log("[API] 태스크 수정 성공");
+    console.log("[API] 응답 Status:", response.status);
+    console.log("[API] 응답 Data:", JSON.stringify(response.data, null, 2));
+
+    return response.data;
+  } catch (error) {
+    const axiosError = error as AxiosError;
+    console.error("[API] 태스크 수정 실패");
     console.error("[API] 에러 상세:", axiosError);
     if (axiosError.response) {
       console.error("[API] 응답 Status:", axiosError.response.status);

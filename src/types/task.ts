@@ -103,3 +103,24 @@ export interface ListTasksResponse {
 export interface GetTaskResponse {
   data: ApiTaskItem;
 }
+
+// 태스크 수정 요청 타입
+export interface UpdateTaskRequest {
+  title?: string;
+  description?: string;
+  description_md?: string;
+  type?: ApiTaskType | string;
+  status?: ApiTaskStatus | string;
+  priority?: number;
+  tags?: string[];
+  due_at?: string;
+  result_files?: string[];
+  summary?: string;
+  duration?: number;
+  result_logs?: string;
+}
+
+// 태스크 수정 응답 타입
+export interface UpdateTaskResponse {
+  data: ApiTaskItem;
+}
