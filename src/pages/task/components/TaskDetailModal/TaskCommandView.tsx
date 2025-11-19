@@ -91,7 +91,7 @@ export default function TaskCommandView({
 
   // 실행 상태 폴링
   useEffect(() => {
-    if (!run || (run.status !== "pending" && run.status !== "running")) {
+    if (!run || (run.status !== "queued" && run.status !== "running")) {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
         pollingIntervalRef.current = null;
@@ -110,7 +110,7 @@ export default function TaskCommandView({
 
         // 완료 또는 실패 시 폴링 중지
         if (
-          updatedRun.status === "completed" ||
+          updatedRun.status === "succeeded" ||
           updatedRun.status === "failed" ||
           updatedRun.status === "cancelled"
         ) {
@@ -142,12 +142,20 @@ export default function TaskCommandView({
     try {
       setIsLoading(true);
 
-      // 태스크 정보를 프롬프트로 변환
-      const prompt = `프로젝트 ${projectId}의 태스크 ${task.taskCode || task.id}를 수행하세요.\n\n태스크 제목: ${task.title}\n태스크 내용: ${task.content || ""}`;
+      // 태스크 정보를 메시지로 변환
+      const taskMessage = `프로젝트 ${projectId}의 태스크 ${task.taskCode || task.id}를 수행하세요.\n\n태스크 제목: ${task.title}\n태스크 내용: ${task.content || ""}`;
 
       const newRun = await createRun({
         sessionId: session.sessionId,
-        prompt: prompt,
+        mode: "chat",
+        input: {
+          messages: [
+            {
+              content: taskMessage,
+              role: "user",
+            },
+          ],
+        },
       });
 
       setRun(newRun);
@@ -198,11 +206,11 @@ export default function TaskCommandView({
     if (!run) return null;
 
     switch (run.status) {
-      case "pending":
+      case "queued":
         return <Clock className="w-5 h-5 text-yellow-600" />;
       case "running":
         return <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />;
-      case "completed":
+      case "succeeded":
         return <CheckCircle2 className="w-5 h-5 text-green-600" />;
       case "failed":
         return <XCircle className="w-5 h-5 text-red-600" />;
@@ -217,11 +225,11 @@ export default function TaskCommandView({
     if (!run) return "대기 중";
 
     switch (run.status) {
-      case "pending":
+      case "queued":
         return "대기 중";
       case "running":
         return "실행 중";
-      case "completed":
+      case "succeeded":
         return "완료";
       case "failed":
         return "실패";
@@ -284,9 +292,14 @@ export default function TaskCommandView({
                     {run.error}
                   </div>
                 )}
-                {run.result && (
-                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm text-green-700">
-                    실행 결과가 있습니다.
+                {run.output?.outputText && (
+                  <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700 whitespace-pre-wrap">
+                    {run.output.outputText}
+                  </div>
+                )}
+                {run.message && !run.output?.outputText && (
+                  <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+                    {run.message}
                   </div>
                 )}
               </div>
@@ -299,16 +312,20 @@ export default function TaskCommandView({
                   실행 이벤트
                 </h3>
                 <div className="space-y-1 max-h-48 overflow-y-auto">
-                  {events.map((event) => (
+                  {events.map((event, idx) => (
                     <div
-                      key={event.eventId}
+                      key={event.eventId || `event-${idx}`}
                       className="text-xs text-gray-600 p-2 bg-white rounded"
                     >
-                      <span className="font-mono text-gray-400">
-                        {new Date(event.timestamp).toLocaleTimeString()}
-                      </span>
-                      {" - "}
-                      <span className="font-medium">{event.type}</span>
+                      {event.timestamp && (
+                        <span className="font-mono text-gray-400">
+                          {new Date(event.timestamp).toLocaleTimeString()}
+                        </span>
+                      )}
+                      {event.timestamp && event.type && " - "}
+                      {event.type && (
+                        <span className="font-medium">{event.type}</span>
+                      )}
                       {event.data && (
                         <pre className="mt-1 text-gray-700 whitespace-pre-wrap">
                           {JSON.stringify(event.data, null, 2)}
@@ -345,12 +362,12 @@ export default function TaskCommandView({
 
             {/* 실행 완료 후 완료 버튼 */}
             {run &&
-              (run.status === "completed" ||
+              (run.status === "succeeded" ||
                 run.status === "failed" ||
                 run.status === "cancelled") && (
                 <div className="flex flex-col items-center justify-center space-y-4">
                   <p className="text-gray-600 text-center">
-                    {run.status === "completed"
+                    {run.status === "succeeded"
                       ? "실행이 완료되었습니다."
                       : run.status === "failed"
                         ? "실행이 실패했습니다."
@@ -371,7 +388,7 @@ export default function TaskCommandView({
           disabled={
             isInitializing ||
             (run !== null &&
-              run.status !== "completed" &&
+              run.status !== "succeeded" &&
               run.status !== "failed" &&
               run.status !== "cancelled")
           }

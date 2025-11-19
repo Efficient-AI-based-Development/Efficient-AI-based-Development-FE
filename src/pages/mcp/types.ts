@@ -147,32 +147,43 @@ export interface ListPromptsResponse {
   data: Prompt[];
 }
 
+// 실행 모드
+export type RunMode = "chat" | "tool" | "prompt";
+
 // 실행 생성 요청
 export interface CreateRunRequest {
   sessionId: string;
-  prompt?: string;
-  toolCalls?: Array<{
-    name: string;
-    arguments?: Record<string, unknown>;
-  }>;
+  mode: RunMode;
+  input: Record<string, unknown>;
+  toolId?: string;
+  promptId?: string;
+  config?: Record<string, unknown>;
 }
 
 // 실행 상태
 export type RunStatus =
-  | "pending"
+  | "queued"
   | "running"
-  | "completed"
+  | "succeeded"
   | "failed"
   | "cancelled";
 
 // 실행 정보
 export interface Run {
   runId: string;
-  sessionId: string;
+  sessionId?: string;
+  mode?: RunMode;
   status: RunStatus;
-  createdAt: string;
-  completedAt?: string;
-  result?: unknown;
+  createdAt?: string;
+  updatedAt?: string;
+  startedAt?: string;
+  finishedAt?: string;
+  result?: Record<string, unknown>;
+  message?: string;
+  output?: {
+    outputText?: string;
+    [key: string]: unknown;
+  };
   error?: string;
 }
 
@@ -186,16 +197,29 @@ export interface GetRunResponse {
   data: Run;
 }
 
+// 실행 이벤트 타입
+export type RunEventType = "RUN_STATUS" | "RUN_RESULT";
+
 // 실행 이벤트
 export interface RunEvent {
-  eventId: string;
-  runId: string;
-  type: string;
-  timestamp: string;
-  data?: unknown;
+  eventId?: string;
+  runId?: string;
+  type?: RunEventType | string;
+  timestamp?: string;
+  data?: Record<string, unknown>;
+  [key: string]: unknown;
 }
 
 // 실행 이벤트 목록 응답
 export interface ListRunEventsResponse {
   data: RunEvent[];
+}
+
+// 실행 취소 응답
+export interface CancelRunResponse {
+  data: {
+    cancelled?: boolean;
+    runId?: string;
+    [key: string]: unknown;
+  };
 }

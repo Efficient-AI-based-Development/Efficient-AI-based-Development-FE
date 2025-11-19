@@ -24,6 +24,7 @@ import type {
   GetRunResponse,
   ListRunEventsResponse,
   RunEvent,
+  CancelRunResponse,
 } from "../types";
 import type { AxiosError } from "axios";
 
@@ -269,9 +270,14 @@ export async function getRun(runId: string): Promise<Run> {
 /**
  * 실행 취소
  */
-export async function cancelRun(runId: string): Promise<void> {
+export async function cancelRun(
+  runId: string,
+): Promise<CancelRunResponse["data"]> {
   try {
-    await apiClient.post(`/api/v1/mcp/runs/${runId}/cancel`);
+    const response = await apiClient.post<CancelRunResponse>(
+      `/api/v1/mcp/runs/${runId}/cancel`,
+    );
+    return response.data.data;
   } catch (error) {
     const axiosError = error as AxiosError;
     console.error("[MCP Service] 실행 취소 실패:", axiosError);
