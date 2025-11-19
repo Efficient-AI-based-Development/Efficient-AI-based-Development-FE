@@ -79,3 +79,126 @@ export interface ProviderGuideResponse {
   prerequisites: string[];
   platforms: PlatformGuide[];
 }
+
+// 세션 생성 요청
+export interface CreateSessionRequest {
+  connectionId: string;
+  projectId: string;
+  metadata?: Record<string, unknown>;
+}
+
+// 세션 상태
+export type SessionStatus = "ready" | "active" | "closed" | "error";
+
+// 세션 정보
+export interface Session {
+  sessionId: string;
+  connectionId: string;
+  status: SessionStatus;
+  createdAt: string;
+  metadata?: Record<string, unknown>;
+}
+
+// 세션 생성 응답
+export interface CreateSessionResponse {
+  data: Session;
+}
+
+// 세션 목록 응답
+export interface ListSessionsResponse {
+  data: Session[];
+}
+
+// 툴 정보
+export interface Tool {
+  name: string;
+  description?: string;
+  inputSchema?: Record<string, unknown>;
+}
+
+// 툴 목록 응답
+export interface ListToolsResponse {
+  data: Tool[];
+}
+
+// 리소스 정보
+export interface Resource {
+  uri: string;
+  name: string;
+  description?: string;
+  mimeType?: string;
+}
+
+// 리소스 목록 응답
+export interface ListResourcesResponse {
+  data: Resource[];
+}
+
+// 프롬프트 정보
+export interface Prompt {
+  name: string;
+  description?: string;
+  arguments?: Array<{
+    name: string;
+    description?: string;
+    required?: boolean;
+  }>;
+}
+
+// 프롬프트 목록 응답
+export interface ListPromptsResponse {
+  data: Prompt[];
+}
+
+// 실행 생성 요청
+export interface CreateRunRequest {
+  sessionId: string;
+  prompt?: string;
+  toolCalls?: Array<{
+    name: string;
+    arguments?: Record<string, unknown>;
+  }>;
+}
+
+// 실행 상태
+export type RunStatus =
+  | "pending"
+  | "running"
+  | "completed"
+  | "failed"
+  | "cancelled";
+
+// 실행 정보
+export interface Run {
+  runId: string;
+  sessionId: string;
+  status: RunStatus;
+  createdAt: string;
+  completedAt?: string;
+  result?: unknown;
+  error?: string;
+}
+
+// 실행 생성 응답
+export interface CreateRunResponse {
+  data: Run;
+}
+
+// 실행 조회 응답
+export interface GetRunResponse {
+  data: Run;
+}
+
+// 실행 이벤트
+export interface RunEvent {
+  eventId: string;
+  runId: string;
+  type: string;
+  timestamp: string;
+  data?: unknown;
+}
+
+// 실행 이벤트 목록 응답
+export interface ListRunEventsResponse {
+  data: RunEvent[];
+}

@@ -8,6 +8,10 @@ import type {
   ListConnectionsResponse,
   ProviderGuideResponse,
   ProviderId,
+  CreateSessionRequest,
+  CreateSessionResponse,
+  Session,
+  ListSessionsResponse,
 } from "../types";
 import type { AxiosError } from "axios";
 
@@ -112,6 +116,43 @@ export async function getProviderGuide(
   } catch (error) {
     const axiosError = error as AxiosError;
     console.error("[MCP Service] 가이드 조회 실패:", axiosError);
+    throw error;
+  }
+}
+
+/**
+ * 세션 생성
+ */
+export async function createSession(
+  request: CreateSessionRequest,
+): Promise<Session> {
+  try {
+    const response = await apiClient.post<CreateSessionResponse>(
+      "/api/v1/mcp/sessions",
+      request,
+    );
+    return response.data.data;
+  } catch (error) {
+    const axiosError = error as AxiosError;
+    console.error("[MCP Service] 세션 생성 실패:", axiosError);
+    throw error;
+  }
+}
+
+/**
+ * 세션 목록 조회
+ */
+export async function listSessions(connectionId?: string): Promise<Session[]> {
+  try {
+    const params = connectionId ? { connectionId } : {};
+    const response = await apiClient.get<ListSessionsResponse>(
+      "/api/v1/mcp/sessions",
+      { params },
+    );
+    return response.data.data;
+  } catch (error) {
+    const axiosError = error as AxiosError;
+    console.error("[MCP Service] 세션 목록 조회 실패:", axiosError);
     throw error;
   }
 }
