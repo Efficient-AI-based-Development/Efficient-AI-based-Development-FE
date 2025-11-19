@@ -12,7 +12,6 @@ const NAV_ITEMS = [
 // 드롭다운 메뉴 데이터
 const DROPDOWN_ITEMS = [
   { path: "/my-projects", label: "내 프로젝트 관리" },
-  { path: "/mcp", label: "MCP 연동" },
   { path: "/guide", label: "MCP 연동 가이드" },
   { path: "/account", label: "계정 설정" },
 ] as const;

@@ -145,7 +145,7 @@ export default function McpPage() {
                 setSelectedAssistant(value as AssistantType)
               }
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[180px] !bg-white">
                 <SelectValue placeholder="AI Assistant 선택" />
               </SelectTrigger>
               <SelectContent>
