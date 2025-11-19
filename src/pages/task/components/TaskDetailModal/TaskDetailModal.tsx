@@ -1,5 +1,9 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import TaskDetailView from "./TaskDetailView";
 import TaskCommandView from "./TaskCommandView";
 import type { Task, TaskType } from "../../../../types/task";
@@ -88,6 +92,9 @@ export default function TaskDetailModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl min-h-[75vh] max-h-[85vh] p-0 bg-white flex flex-col">
+        <DialogDescription className="sr-only">
+          태스크 상세 정보를 확인하고 수정할 수 있는 모달입니다.
+        </DialogDescription>
         {step === "detail" ? (
           <TaskDetailView
             task={task}

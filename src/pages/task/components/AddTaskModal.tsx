@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -190,6 +191,10 @@ export default function AddTaskModal({
         {/* 헤더 */}
         <DialogHeader className="px-6 pt-8">
           <DialogTitle className="text-xl font-bold">Task 추가하기</DialogTitle>
+          <DialogDescription className="sr-only">
+            새로운 태스크를 생성하는 모달입니다. 태그와 중요도를 설정한 후 작업
+            내용을 입력하세요.
+          </DialogDescription>
         </DialogHeader>
 
         {/* 컨텐츠 */}
