@@ -296,3 +296,39 @@ export async function updateTask(
     throw axiosError;
   }
 }
+
+/**
+ * 태스크 삭제 API 호출
+ * DELETE /api/v1/tasks/{task_id}
+ */
+export async function deleteTask(taskId: number): Promise<void> {
+  const url = `/api/v1/tasks/${taskId}`;
+
+  console.log("[API] 태스크 삭제 요청 시작");
+  console.log("[API] Task ID:", taskId);
+  console.log("[API] 요청 URL:", url);
+
+  try {
+    const response = await apiClient.delete(url);
+
+    console.log("[API] 태스크 삭제 성공");
+    console.log("[API] 응답 Status:", response.status);
+    console.log("[API] 응답 Data:", response.data);
+
+    return;
+  } catch (error) {
+    const axiosError = error as AxiosError;
+    console.error("[API] 태스크 삭제 실패");
+    console.error("[API] 에러 상세:", axiosError);
+    if (axiosError.response) {
+      console.error("[API] 응답 Status:", axiosError.response.status);
+      console.error("[API] 응답 Data:", axiosError.response.data);
+    } else if (axiosError.request) {
+      console.error("[API] 요청은 전송되었으나 응답을 받지 못함");
+      console.error("[API] 요청 정보:", axiosError.request);
+    } else {
+      console.error("[API] 요청 설정 중 에러:", axiosError.message);
+    }
+    throw axiosError;
+  }
+}

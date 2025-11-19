@@ -9,6 +9,7 @@ import {
   getTasks,
   getTask,
   updateTask,
+  deleteTask,
   mapApiTaskToTask,
 } from "./services/taskService";
 
@@ -384,7 +385,14 @@ export default function TaskPage() {
 
   // 태스크 삭제 핸들러
   const handleDeleteTask = async (taskId: string) => {
+    console.log("[TaskPage] 태스크 삭제:", taskId);
     try {
+      const taskIdNum = Number(taskId);
+      if (isNaN(taskIdNum)) {
+        console.error("[TaskPage] 유효하지 않은 Task ID:", taskId);
+        return;
+      }
+
       // 낙관적 업데이트
       setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
 
@@ -395,15 +403,18 @@ export default function TaskPage() {
       }
 
       // API 호출
-      await fetch(`/api/tasks/${taskId}`, {
-        method: "DELETE",
-      });
+      await deleteTask(taskIdNum);
+      console.log("[TaskPage] 태스크 삭제 성공");
     } catch (error) {
-      console.error("Failed to delete task:", error);
+      console.error("[TaskPage] 태스크 삭제 실패:", error);
       // 에러 발생 시 다시 불러오기
-      const response = await fetch("/api/tasks");
-      const data = await response.json();
-      setTasks(data);
+      try {
+        const response = await getTasks(PROJECT_ID);
+        const tasks = response.data.map(mapApiTaskToTask);
+        setTasks(tasks);
+      } catch (fetchError) {
+        console.error("[TaskPage] 태스크 목록 재조회 실패:", fetchError);
+      }
     }
   };
 
