@@ -90,6 +90,9 @@ export default function TaskPage() {
     priority: number;
     message: string;
   }) => {
+    console.log("[TaskPage] handleAddTask 호출됨");
+    console.log("[TaskPage] 입력 데이터:", data);
+
     try {
       // 메시지에서 title과 description 추출
       const messageLines = data.message
@@ -97,6 +100,9 @@ export default function TaskPage() {
         .filter((line) => line.trim());
       const title = messageLines[0] || "새로운 태스크";
       const description = data.message;
+
+      console.log("[TaskPage] 추출된 title:", title);
+      console.log("[TaskPage] 추출된 description:", description);
 
       // API 호출
       const response = await createTask(PROJECT_ID, {
@@ -106,6 +112,8 @@ export default function TaskPage() {
         type: data.type,
         priority: data.priority,
       });
+
+      console.log("[TaskPage] API 응답 받음:", response);
 
       // API 응답을 Task 형식으로 변환
       const newTask: Task = {
@@ -120,18 +128,21 @@ export default function TaskPage() {
         updatedAt: response.data.updated_at,
       };
 
+      console.log("[TaskPage] 변환된 Task 객체:", newTask);
+
       // 성공 시 태스크 목록에 추가
       setTasks((prevTasks) => [...prevTasks, newTask]);
+      console.log("[TaskPage] 태스크 목록에 추가 완료");
       setIsModalOpen(false);
     } catch (error) {
-      console.error("Failed to add task:", error);
+      console.error("[TaskPage] 태스크 추가 실패:", error);
       // 에러 발생 시 다시 불러오기
       try {
         const response = await fetch("/api/tasks");
         const tasksData = await response.json();
         setTasks(tasksData);
       } catch (fetchError) {
-        console.error("Failed to fetch tasks after error:", fetchError);
+        console.error("[TaskPage] 태스크 목록 재조회 실패:", fetchError);
       }
     }
   };
