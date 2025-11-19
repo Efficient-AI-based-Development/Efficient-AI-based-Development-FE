@@ -16,6 +16,18 @@ export const apiClient = axios.create({
 // 요청 인터셉터 (필요시 토큰 추가 등)
 apiClient.interceptors.request.use(
   (config) => {
+    console.log("[API Client] 요청 인터셉터");
+    console.log("[API Client] Base URL:", API_BASE_URL);
+    console.log("[API Client] 요청 URL:", config.url);
+    console.log("[API Client] 전체 URL:", `${config.baseURL}${config.url}`);
+    console.log("[API Client] 요청 Method:", config.method?.toUpperCase());
+    console.log("[API Client] 요청 Headers:", config.headers);
+    if (config.data) {
+      console.log(
+        "[API Client] 요청 Body:",
+        JSON.stringify(config.data, null, 2),
+      );
+    }
     // 필요시 인증 토큰 추가
     // const token = localStorage.getItem('token');
     // if (token) {
@@ -24,6 +36,7 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => {
+    console.error("[API Client] 요청 인터셉터 에러:", error);
     return Promise.reject(error);
   },
 );
@@ -31,19 +44,33 @@ apiClient.interceptors.request.use(
 // 응답 인터셉터 (에러 처리)
 apiClient.interceptors.response.use(
   (response) => {
+    console.log("[API Client] 응답 인터셉터 - 성공");
+    console.log("[API Client] 응답 URL:", response.config.url);
+    console.log("[API Client] 응답 Status:", response.status);
+    console.log("[API Client] 응답 Headers:", response.headers);
+    console.log(
+      "[API Client] 응답 Data:",
+      JSON.stringify(response.data, null, 2),
+    );
     return response;
   },
   (error) => {
+    console.error("[API Client] 응답 인터셉터 - 에러");
     // 공통 에러 처리
     if (error.response) {
       // 서버에서 응답이 왔지만 에러 상태 코드
-      console.error("API Error:", error.response.status, error.response.data);
+      console.error("[API Client] 응답 Status:", error.response.status);
+      console.error("[API Client] 응답 Data:", error.response.data);
+      console.error("[API Client] 응답 Headers:", error.response.headers);
     } else if (error.request) {
       // 요청은 보냈지만 응답을 받지 못함
-      console.error("Network Error:", error.request);
+      console.error(
+        "[API Client] Network Error - 요청은 전송되었으나 응답 없음",
+      );
+      console.error("[API Client] 요청 정보:", error.request);
     } else {
       // 요청 설정 중 에러
-      console.error("Error:", error.message);
+      console.error("[API Client] 요청 설정 에러:", error.message);
     }
     return Promise.reject(error);
   },
