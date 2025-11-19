@@ -4,7 +4,12 @@ import TaskBoard from "./components/TaskBoard";
 import AddTaskModal from "./components/AddTaskModal";
 import TaskDetailModal from "./components/TaskDetailModal/TaskDetailModal";
 import type { Task, TaskType } from "../../types/task";
-import { createTask, getTasks, mapApiTaskToTask } from "./services/taskService";
+import {
+  createTask,
+  getTasks,
+  getTask,
+  mapApiTaskToTask,
+} from "./services/taskService";
 
 export default function TaskPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -155,9 +160,37 @@ export default function TaskPage() {
   };
 
   // 태스크 클릭 핸들러
-  const handleTaskClick = (task: Task) => {
-    setSelectedTask(task);
-    setIsDetailModalOpen(true);
+  const handleTaskClick = async (task: Task) => {
+    console.log("[TaskPage] 태스크 클릭:", task);
+    try {
+      // API에서 최신 태스크 정보 가져오기
+      const taskId = Number(task.id);
+      if (isNaN(taskId)) {
+        console.warn("[TaskPage] 유효하지 않은 Task ID:", task.id);
+        setSelectedTask(task);
+        setIsDetailModalOpen(true);
+        return;
+      }
+
+      console.log("[TaskPage] 태스크 상세 조회 시작, Task ID:", taskId);
+      const response = await getTask(taskId);
+      console.log("[TaskPage] 태스크 상세 조회 응답:", response);
+
+      // API 응답을 Task 형식으로 변환
+      const updatedTask = mapApiTaskToTask(response.data);
+      console.log("[TaskPage] 변환된 태스크:", updatedTask);
+
+      setSelectedTask(updatedTask);
+      setIsDetailModalOpen(true);
+    } catch (error) {
+      console.error(
+        "[TaskPage] 태스크 상세 조회 실패, 기존 데이터 사용:",
+        error,
+      );
+      // 에러 발생 시 기존 task 데이터 사용
+      setSelectedTask(task);
+      setIsDetailModalOpen(true);
+    }
   };
 
   // 태스크 내용 업데이트 핸들러

@@ -3,6 +3,7 @@ import type {
   CreateTaskRequest,
   CreateTaskResponse,
   ListTasksResponse,
+  GetTaskResponse,
   ApiTaskType,
   ApiTaskStatus,
   ApiTaskItem,
@@ -176,6 +177,42 @@ export async function getTasks(
   } catch (error) {
     const axiosError = error as AxiosError;
     console.error("[API] 태스크 목록 조회 실패");
+    console.error("[API] 에러 상세:", axiosError);
+    if (axiosError.response) {
+      console.error("[API] 응답 Status:", axiosError.response.status);
+      console.error("[API] 응답 Data:", axiosError.response.data);
+    } else if (axiosError.request) {
+      console.error("[API] 요청은 전송되었으나 응답을 받지 못함");
+      console.error("[API] 요청 정보:", axiosError.request);
+    } else {
+      console.error("[API] 요청 설정 중 에러:", axiosError.message);
+    }
+    throw axiosError;
+  }
+}
+
+/**
+ * 태스크 상세 조회 API 호출
+ * GET /api/v1/tasks/{task_id}
+ */
+export async function getTask(taskId: number): Promise<GetTaskResponse> {
+  const url = `/api/v1/tasks/${taskId}`;
+
+  console.log("[API] 태스크 상세 조회 요청 시작");
+  console.log("[API] Task ID:", taskId);
+  console.log("[API] 요청 URL:", url);
+
+  try {
+    const response = await apiClient.get<GetTaskResponse>(url);
+
+    console.log("[API] 태스크 상세 조회 성공");
+    console.log("[API] 응답 Status:", response.status);
+    console.log("[API] 응답 Data:", JSON.stringify(response.data, null, 2));
+
+    return response.data;
+  } catch (error) {
+    const axiosError = error as AxiosError;
+    console.error("[API] 태스크 상세 조회 실패");
     console.error("[API] 에러 상세:", axiosError);
     if (axiosError.response) {
       console.error("[API] 응답 Status:", axiosError.response.status);

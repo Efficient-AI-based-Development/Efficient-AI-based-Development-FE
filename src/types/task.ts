@@ -98,3 +98,8 @@ export interface ListTasksResponse {
     total: number;
   };
 }
+
+// 태스크 상세 조회 응답 타입
+export interface GetTaskResponse {
+  data: ApiTaskItem;
+}
