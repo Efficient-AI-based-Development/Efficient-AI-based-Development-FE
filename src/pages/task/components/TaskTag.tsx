@@ -2,7 +2,7 @@ import type { TaskType } from "../../../types/task";
 
 interface TaskTagProps {
   type: TaskType;
-  number?: number;
+  number?: number; // deprecated: 더 이상 사용하지 않음 (호환성을 위해 유지)
   isButton?: boolean;
   isSelected?: boolean;
   onClick?: () => void;
@@ -10,7 +10,8 @@ interface TaskTagProps {
 
 export default function TaskTag({
   type,
-  number = 1,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  number: _,
   isButton = false,
   isSelected = false,
   onClick,
@@ -47,14 +48,10 @@ export default function TaskTag({
         className={baseClasses}
         type="button"
       >
-        {type}#{number}
+        {type}
       </button>
     );
   }
 
-  return (
-    <span className={baseClasses}>
-      {type}#{number}
-    </span>
-  );
+  return <span className={baseClasses}>{type}</span>;
 }
