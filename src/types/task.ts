@@ -26,3 +26,44 @@ export interface TaskStats {
   totalTasks: number;
   completionRate: number;
 }
+
+// API 타입 정의
+export type ApiTaskType = "feat" | "design" | "docs";
+export type ApiTaskStatus = "todo" | "in_progress" | "review" | "done";
+export type ApiTaskSource = "MCP" | "USER";
+
+// API 요청 타입
+export interface CreateTaskRequest {
+  title: string;
+  description: string;
+  description_md?: string;
+  type: ApiTaskType;
+  source: ApiTaskSource;
+  status: ApiTaskStatus;
+  priority: number;
+  tags?: string[];
+  due_at?: string;
+}
+
+// API 응답 타입
+export interface CreateTaskResponse {
+  data: {
+    id: number;
+    project_id: number;
+    title: string;
+    description: string;
+    description_md?: string;
+    type: ApiTaskType;
+    source: ApiTaskSource;
+    status: ApiTaskStatus;
+    priority: number;
+    tags?: string[];
+    due_at?: string;
+    result_files?: string[];
+    summary?: string;
+    duration?: number;
+    result_logs?: string;
+    created_at: string;
+    updated_at: string;
+  };
+}
