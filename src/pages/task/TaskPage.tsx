@@ -4,6 +4,7 @@ import TaskBoard from "./components/TaskBoard";
 import AddTaskModal from "./components/AddTaskModal";
 import TaskDetailModal from "./components/TaskDetailModal/TaskDetailModal";
 import type { Task, TaskType } from "../../types/task";
+import { createTask } from "./services/taskService";
 
 export default function TaskPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -14,7 +15,7 @@ export default function TaskPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // 프로젝트 정보
-  const PROJECT_ID = "4Y3M";
+  const PROJECT_ID = 1; // TODO: 실제 프로젝트 ID로 변경 필요
 
   // 태스크 목록 불러오기
   useEffect(() => {
@@ -90,35 +91,48 @@ export default function TaskPage() {
     message: string;
   }) => {
     try {
-      // 새 태스크 생성
-      const newTask: Task = {
-        id: String(Date.now()), // 임시 ID 생성
-        title: data.message.split("\n")[0] || "새로운 태스크",
-        type: data.type,
-        typeNumber: 1, // 타입별로 계산 필요
-        status: "TODO",
-        priority: data.priority,
-      };
-
-      // 낙관적 업데이트
-      setTasks((prevTasks) => [...prevTasks, newTask]);
+      // 메시지에서 title과 description 추출
+      const messageLines = data.message
+        .split("\n")
+        .filter((line) => line.trim());
+      const title = messageLines[0] || "새로운 태스크";
+      const description = data.message;
 
       // API 호출
-      await fetch("/api/tasks", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newTask),
+      const response = await createTask(PROJECT_ID, {
+        title,
+        description,
+        description_md: description,
+        type: data.type,
+        priority: data.priority,
       });
 
+      // API 응답을 Task 형식으로 변환
+      const newTask: Task = {
+        id: String(response.data.id),
+        title: response.data.title,
+        type: data.type, // API 응답의 type은 "feat"이지만, 프론트엔드에서는 "DEV" 사용
+        typeNumber: 1, // TODO: 타입별로 계산 필요
+        status: "TODO", // API 응답의 status는 "todo"이지만, 프론트엔드에서는 "TODO" 사용
+        priority: response.data.priority,
+        content: response.data.description_md,
+        createdAt: response.data.created_at,
+        updatedAt: response.data.updated_at,
+      };
+
+      // 성공 시 태스크 목록에 추가
+      setTasks((prevTasks) => [...prevTasks, newTask]);
       setIsModalOpen(false);
     } catch (error) {
       console.error("Failed to add task:", error);
       // 에러 발생 시 다시 불러오기
-      const response = await fetch("/api/tasks");
-      const data = await response.json();
-      setTasks(data);
+      try {
+        const response = await fetch("/api/tasks");
+        const tasksData = await response.json();
+        setTasks(tasksData);
+      } catch (fetchError) {
+        console.error("Failed to fetch tasks after error:", fetchError);
+      }
     }
   };
 
@@ -421,7 +435,7 @@ export default function TaskPage() {
           isOpen={isDetailModalOpen}
           onClose={() => setIsDetailModalOpen(false)}
           task={selectedTask}
-          projectId={PROJECT_ID}
+          projectId={String(PROJECT_ID)}
           onUpdate={handleUpdateTaskContent}
           onUpdateType={handleUpdateTaskType}
           onUpdatePriority={handleUpdateTaskPriority}
