@@ -67,3 +67,34 @@ export interface CreateTaskResponse {
     updated_at: string;
   };
 }
+
+// API 태스크 아이템 타입
+export interface ApiTaskItem {
+  id: number;
+  project_id: number;
+  title: string;
+  description: string;
+  description_md?: string;
+  type: ApiTaskType;
+  source: ApiTaskSource;
+  status: ApiTaskStatus;
+  priority: number;
+  tags?: string[];
+  due_at?: string;
+  result_files?: string[];
+  summary?: string;
+  duration?: number;
+  result_logs?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// 태스크 목록 조회 응답 타입
+export interface ListTasksResponse {
+  data: ApiTaskItem[];
+  meta: {
+    page: number;
+    page_size: number;
+    total: number;
+  };
+}

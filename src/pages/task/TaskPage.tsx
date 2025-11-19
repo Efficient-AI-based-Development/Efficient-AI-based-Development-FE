@@ -4,7 +4,7 @@ import TaskBoard from "./components/TaskBoard";
 import AddTaskModal from "./components/AddTaskModal";
 import TaskDetailModal from "./components/TaskDetailModal/TaskDetailModal";
 import type { Task, TaskType } from "../../types/task";
-import { createTask } from "./services/taskService";
+import { createTask, getTasks, mapApiTaskToTask } from "./services/taskService";
 
 export default function TaskPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -20,12 +20,19 @@ export default function TaskPage() {
   // 태스크 목록 불러오기
   useEffect(() => {
     const fetchTasks = async () => {
+      console.log("[TaskPage] 태스크 목록 조회 시작");
       try {
-        const response = await fetch("/api/tasks");
-        const data = await response.json();
-        setTasks(data);
+        const response = await getTasks(PROJECT_ID);
+        console.log("[TaskPage] API 응답 받음:", response);
+
+        // API 응답을 Task 형식으로 변환
+        const tasks = response.data.map(mapApiTaskToTask);
+        console.log("[TaskPage] 변환된 태스크 목록:", tasks);
+
+        setTasks(tasks);
+        console.log("[TaskPage] 태스크 목록 설정 완료");
       } catch (error) {
-        console.error("Failed to fetch tasks:", error);
+        console.error("[TaskPage] 태스크 목록 조회 실패:", error);
       } finally {
         setIsLoading(false);
       }
