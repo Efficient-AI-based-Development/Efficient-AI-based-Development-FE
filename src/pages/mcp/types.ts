@@ -111,9 +111,11 @@ export interface ListSessionsResponse {
 
 // 툴 정보
 export interface Tool {
+  toolId: string;
   name: string;
   description?: string;
   inputSchema?: Record<string, unknown>;
+  outputSchema?: Record<string, unknown>;
 }
 
 // 툴 목록 응답
@@ -124,9 +126,8 @@ export interface ListToolsResponse {
 // 리소스 정보
 export interface Resource {
   uri: string;
-  name: string;
+  kind: string;
   description?: string;
-  mimeType?: string;
 }
 
 // 리소스 목록 응답
@@ -136,13 +137,9 @@ export interface ListResourcesResponse {
 
 // 프롬프트 정보
 export interface Prompt {
+  promptId: string;
   name: string;
   description?: string;
-  arguments?: Array<{
-    name: string;
-    description?: string;
-    required?: boolean;
-  }>;
 }
 
 // 프롬프트 목록 응답

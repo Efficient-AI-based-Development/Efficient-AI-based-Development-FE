@@ -359,7 +359,7 @@ export default function ProjectSettingPage() {
                   <div className="space-y-2">
                     {resources.map((resource, idx) => (
                       <div key={idx} className="p-3 bg-gray-50 rounded-lg">
-                        <div className="font-medium">{resource.name}</div>
+                        <div className="font-medium">{resource.kind}</div>
                         <div className="text-sm text-gray-600 mt-1">
                           {resource.uri}
                         </div>
