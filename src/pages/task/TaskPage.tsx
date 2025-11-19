@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useRouter } from "@tanstack/react-router";
+import { useRouter, useSearch } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import TaskHeader from "./components/TaskHeader";
 import TaskBoard from "./components/TaskBoard";
@@ -23,9 +23,17 @@ export default function TaskPage() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
+  const search = useSearch({ from: "/task" });
+
+  const DEFAULT_PROJECT_ID = 1;
+  const parsedProjectId = search.projectId
+    ? Number(search.projectId)
+    : DEFAULT_PROJECT_ID;
 
   // 프로젝트 정보
-  const PROJECT_ID = 1; // TODO: 실제 프로젝트 ID로 변경 필요
+  const PROJECT_ID = Number.isNaN(parsedProjectId)
+    ? DEFAULT_PROJECT_ID
+    : parsedProjectId;
 
   // 태스크 목록 불러오기
   useEffect(() => {
@@ -49,19 +57,14 @@ export default function TaskPage() {
     };
 
     fetchTasks();
-  }, []);
+  }, [PROJECT_ID]);
 
   // URL 쿼리로 진입 시 추가 모달 자동 오픈 (?new=1)
   useEffect(() => {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("new")) {
-        setIsModalOpen(true);
-      }
-    } catch {
-      // window 사용 불가 환경은 무시
+    if (search.new) {
+      setIsModalOpen(true);
     }
-  }, []);
+  }, [search.new]);
 
   // 태스크 상태 업데이트
   const handleTaskUpdate = async (
