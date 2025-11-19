@@ -156,3 +156,16 @@ export async function listSessions(connectionId?: string): Promise<Session[]> {
     throw error;
   }
 }
+
+/**
+ * 세션 종료
+ */
+export async function deleteSession(sessionId: string): Promise<void> {
+  try {
+    await apiClient.delete(`/api/v1/mcp/sessions/${sessionId}`);
+  } catch (error) {
+    const axiosError = error as AxiosError;
+    console.error("[MCP Service] 세션 종료 실패:", axiosError);
+    throw error;
+  }
+}
