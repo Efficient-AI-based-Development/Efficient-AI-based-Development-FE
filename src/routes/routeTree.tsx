@@ -16,7 +16,6 @@ const SettingPage3 = lazy(
   () => import("@/pages/document/confirm/SettingPage3"),
 );
 const CheckPage = lazy(() => import("@/pages/document/confirm/CheckPage"));
-const ChatPage = lazy(() => import("@/pages/document/chat/ChatPage"));
 const TaskPage = lazy(() => import("@/pages/task/TaskPage"));
 const InsightPage = lazy(() => import("@/pages/insight/InsightPage"));
 
@@ -27,6 +26,7 @@ const MyProjectsPage = lazy(() => import("@/pages/my-projects/MyProjectsPage"));
 const McpPage = lazy(() => import("@/pages/mcp/McpPage"));
 const GuidePage = lazy(() => import("@/pages/guide/GuidePage"));
 const AccountPage = lazy(() => import("@/pages/account/AccountPage"));
+const LoginPage = lazy(() => import("@/pages/auth/LoginPage"));
 
 const rootRoute = createRootRoute({
   component: RootLayout,
@@ -119,19 +119,6 @@ const documentCheckRoute = createRoute({
   ),
 });
 
-const documentChatRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/document/chat",
-  validateSearch: (search: Record<string, unknown>) => ({
-    initialMessage: (search.initialMessage as string) || undefined,
-  }),
-  component: () => (
-    <Suspense fallback={<div className="p-6"> 로딩중...</div>}>
-      <ChatPage />
-    </Suspense>
-  ),
-});
-
 const taskRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/task",
@@ -211,6 +198,16 @@ const accountRoute = createRoute({
   ),
 });
 
+const loginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/login",
+  component: () => (
+    <Suspense fallback={<div className="p-6"> 로딩중...</div>}>
+      <LoginPage />
+    </Suspense>
+  ),
+});
+
 export const routeTree = rootRoute.addChildren([
   homeRoute,
   documentRoute,
@@ -218,7 +215,6 @@ export const routeTree = rootRoute.addChildren([
   documentSetting2Route,
   documentSetting3Route,
   documentCheckRoute,
-  documentChatRoute,
   taskRoute,
   insightRoute,
   projectSettingRoute,
@@ -226,6 +222,7 @@ export const routeTree = rootRoute.addChildren([
   mcpRoute,
   guideRoute,
   accountRoute,
+  loginRoute,
 ]);
 export const router = createRouter({ routeTree });
 

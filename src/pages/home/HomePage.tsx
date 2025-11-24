@@ -5,7 +5,7 @@ export default function HomePage() {
 
   const handleCardClick = () => {
     navigate({
-      to: "/document/setting1",
+      to: "/login",
     });
   };
 
