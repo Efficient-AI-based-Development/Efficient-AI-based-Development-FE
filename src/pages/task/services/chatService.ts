@@ -63,8 +63,10 @@ export async function getStream(
   onError?: (error: Error) => void,
   onComplete?: () => void,
 ): Promise<void> {
+  // 로컬 개발 환경에서는 Vite proxy를 사용하도록 상대 경로 사용
   const API_BASE_URL =
-    import.meta.env.VITE_API_BASE_URL || "http://34.61.144.150:8000";
+    import.meta.env.VITE_API_BASE_URL ||
+    (import.meta.env.DEV ? "" : "http://34.61.144.150:8000");
   const token =
     localStorage.getItem("token") || localStorage.getItem("accessToken");
 

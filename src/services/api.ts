@@ -1,8 +1,11 @@
 import axios from "axios";
 
 // API 기본 URL 설정 (환경 변수에서 가져오기)
+// 로컬 개발 환경에서는 Vite proxy를 사용하도록 빈 문자열 또는 상대 경로 사용
+// 프로덕션에서는 전체 URL 사용
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://34.61.144.150:8000";
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.DEV ? "" : "http://34.61.144.150:8000");
 
 // axios 인스턴스 생성
 export const apiClient = axios.create({
