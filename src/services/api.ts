@@ -87,34 +87,17 @@ apiClient.interceptors.response.use(
           return apiClient(originalRequest);
         } catch (refreshError) {
           console.error("[API Client] 토큰 갱신 실패:", refreshError);
-          // 토큰 갱신 실패 시에만 로그아웃 처리
-          localStorage.removeItem("token");
-          localStorage.removeItem("accessToken");
-          localStorage.removeItem("refreshToken");
-          // 로그인 페이지로 리다이렉트
-          if (window.location.pathname !== "/login") {
-            window.location.href = "/login";
-          }
+          // 토큰 갱신 실패 시 에러만 반환 (리다이렉트는 각 컴포넌트에서 처리)
+          // Chat API 같은 경우 리다이렉트하지 않고 에러 메시지만 표시해야 함
           return Promise.reject(refreshError);
         }
-      } else if (!token) {
-        // 토큰이 전혀 없는 경우에만 로그인 페이지로 리다이렉트
-        console.error(
-          `[API Client] ${error.response?.status} 에러 발생, 토큰 없음`,
-        );
-        localStorage.removeItem("token");
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        // 로그인 페이지로 리다이렉트
-        if (window.location.pathname !== "/login") {
-          window.location.href = "/login";
-        }
-        return Promise.reject(error);
       } else {
-        // 토큰은 있지만 403 에러인 경우 권한 문제일 수 있음
-        // 리다이렉트하지 않고 에러만 반환
+        // 토큰이 없거나 403 에러인 경우
+        // 리다이렉트하지 않고 에러만 반환 (각 컴포넌트에서 처리)
         console.error(
-          `[API Client] ${error.response?.status} 에러 발생, 권한 문제일 수 있음`,
+          `[API Client] ${error.response?.status} 에러 발생${
+            !token ? ", 토큰 없음" : ", 권한 문제일 수 있음"
+          }`,
         );
         return Promise.reject(error);
       }
