@@ -1,25 +1,66 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "@tanstack/react-router";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { listProjects } from "../mcp/services/mcpService";
-import type { ProjectMcpStatus } from "../mcp/types";
-import { Search, FolderOpen, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { listProjects } from "@/services/projectService";
+import type {
+  ListProjectsResponse,
+  Project,
+  ProjectStatus,
+} from "@/types/project";
+import {
+  Archive,
+  CheckCircle2,
+  Clock,
+  FolderOpen,
+  RefreshCw,
+  Search,
+} from "lucide-react";
 
 export default function MyProjectsPage() {
-  const [projects, setProjects] = useState<ProjectMcpStatus[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [meta, setMeta] = useState<ListProjectsResponse["meta"]>({
+    page: 1,
+    page_size: 9,
+    total: 0,
+  });
+  const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
   const { toast } = useToast();
+  const PAGE_SIZE = 9;
+
+  // 검색어 디바운스
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchInput.trim());
+    }, 400);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchInput]);
 
   // 프로젝트 목록 불러오기
   useEffect(() => {
+    let isMounted = true;
+
     const fetchProjects = async () => {
       try {
         setIsLoading(true);
-        const data = await listProjects();
-        setProjects(data);
+        const response = await listProjects({
+          q: debouncedSearch || undefined,
+          page,
+          pageSize: PAGE_SIZE,
+        });
+
+        if (!isMounted) return;
+
+        setProjects(response.projects);
+        setMeta(response.meta);
+        setPage(response.meta.page);
       } catch (error) {
         console.error("[MyProjectsPage] 프로젝트 목록 조회 실패:", error);
         toast({
@@ -27,63 +68,78 @@ export default function MyProjectsPage() {
           variant: "destructive",
         });
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchProjects();
-  }, [toast]);
-
-  // 검색 필터링
-  const filteredProjects = projects.filter((project) => {
-    if (!searchQuery.trim()) return true;
-    const query = searchQuery.toLowerCase().trim();
-    return project.name.toLowerCase().includes(query);
-  });
+    return () => {
+      isMounted = false;
+    };
+  }, [PAGE_SIZE, debouncedSearch, page, toast]);
 
   // 프로젝트 클릭 핸들러
-  const handleProjectClick = (projectId: string) => {
+  const handleProjectClick = (projectId: number) => {
     router.navigate({
       to: "/task",
       search: (prev) => ({
         ...(prev ?? {}),
-        projectId,
+        projectId: String(projectId),
       }),
     });
   };
 
-  // MCP 상태 뱃지 컴포넌트
-  const McpStatusBadge = ({
-    status,
-  }: {
-    status: ProjectMcpStatus["mcpStatus"];
-  }) => {
+  const handleSearchChange = (value: string) => {
+    setSearchInput(value);
+    setPage(1);
+  };
+
+  const handlePrevPage = () => {
+    setPage((prev) => Math.max(1, prev - 1));
+  };
+
+  const totalPages =
+    meta.page_size > 0
+      ? Math.max(1, Math.ceil(meta.total / meta.page_size))
+      : 1;
+  const currentPage = meta.page || page;
+
+  const handleNextPage = () => {
+    if (currentPage >= totalPages) return;
+    setPage((prev) => prev + 1);
+  };
+
+  // 프로젝트 상태 뱃지
+  const ProjectStatusBadge = ({ status }: { status: ProjectStatus }) => {
     const statusConfig: Record<
-      ProjectMcpStatus["mcpStatus"],
-      {
-        label: string;
-        icon: typeof CheckCircle2;
-        className: string;
-      }
+      ProjectStatus,
+      { label: string; icon: typeof CheckCircle2; className: string }
     > = {
-      connected: {
-        label: "연결됨",
-        icon: CheckCircle2,
-        className: "bg-green-100 text-green-700 border-green-300",
-      },
-      pending: {
-        label: "대기 중",
+      not_started: {
+        label: "시작 전",
         icon: Clock,
-        className: "bg-yellow-100 text-yellow-700 border-yellow-300",
+        className: "bg-slate-100 text-slate-700 border-slate-200",
       },
-      None: {
-        label: "미연결",
-        icon: XCircle,
-        className: "bg-gray-100 text-gray-700 border-gray-300",
+      in_progress: {
+        label: "진행 중",
+        icon: RefreshCw,
+        className: "bg-blue-100 text-blue-700 border-blue-200",
+      },
+      completed: {
+        label: "완료됨",
+        icon: CheckCircle2,
+        className: "bg-green-100 text-green-700 border-green-200",
+      },
+      archived: {
+        label: "보관됨",
+        icon: Archive,
+        className: "bg-gray-100 text-gray-600 border-gray-200",
       },
     };
 
-    const config = statusConfig[status] ?? statusConfig.None;
+    const config = statusConfig[status];
     const Icon = config.icon;
 
     return (
@@ -95,6 +151,8 @@ export default function MyProjectsPage() {
       </div>
     );
   };
+
+  const hasSearch = Boolean(debouncedSearch);
 
   if (isLoading) {
     return (
@@ -119,29 +177,29 @@ export default function MyProjectsPage() {
           <Input
             type="text"
             placeholder="프로젝트 이름으로 검색..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={searchInput}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="pl-10 pr-4 py-2 w-full"
           />
         </div>
       </div>
 
       {/* 프로젝트 목록 */}
-      {filteredProjects.length === 0 ? (
+      {projects.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-12 flex flex-col items-center justify-center">
           <FolderOpen className="w-16 h-16 text-gray-400 mb-4" />
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            {searchQuery ? "검색 결과가 없습니다" : "프로젝트가 없습니다"}
+            {hasSearch ? "검색 결과가 없습니다" : "프로젝트가 없습니다"}
           </h3>
           <p className="text-gray-600 text-center">
-            {searchQuery
+            {hasSearch
               ? "다른 검색어로 시도해보세요."
               : "새 프로젝트를 생성하여 시작하세요."}
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProjects.map((project) => (
+          {projects.map((project) => (
             <button
               key={project.id}
               onClick={() => handleProjectClick(project.id)}
@@ -151,7 +209,7 @@ export default function MyProjectsPage() {
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1 min-w-0">
                   <h3 className="text-lg font-semibold text-gray-900 truncate mb-2 group-hover:text-primary transition-colors">
-                    {project.name}
+                    {project.title}
                   </h3>
                   <p className="text-sm text-gray-500">
                     프로젝트 ID: {project.id}
@@ -159,12 +217,9 @@ export default function MyProjectsPage() {
                 </div>
               </div>
 
-              {/* MCP 상태 */}
+              {/* 프로젝트 상태 */}
               <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">MCP 상태:</span>
-                  <McpStatusBadge status={project.mcpStatus} />
-                </div>
+                <ProjectStatusBadge status={project.status} />
                 <div className="text-gray-400 group-hover:text-primary transition-colors">
                   <svg
                     className="w-5 h-5"
@@ -185,6 +240,30 @@ export default function MyProjectsPage() {
           ))}
         </div>
       )}
+
+      {/* 페이지네이션 */}
+      <div className="mt-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="text-sm text-gray-600">
+          총 {meta.total.toLocaleString()}개의 프로젝트 · 페이지 {currentPage} /{" "}
+          {totalPages}
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handlePrevPage}
+            disabled={currentPage <= 1}
+            className="px-4 py-2 border rounded-lg text-sm font-medium text-gray-700 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed hover:bg-gray-50"
+          >
+            이전
+          </button>
+          <button
+            onClick={handleNextPage}
+            disabled={currentPage >= totalPages || projects.length === 0}
+            className="px-4 py-2 border rounded-lg text-sm font-medium text-gray-700 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed hover:bg-gray-50"
+          >
+            다음
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

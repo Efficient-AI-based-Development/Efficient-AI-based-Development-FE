@@ -28,11 +28,14 @@ apiClient.interceptors.request.use(
         JSON.stringify(config.data, null, 2),
       );
     }
-    // 필요시 인증 토큰 추가
-    // const token = localStorage.getItem('token');
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
+    // 인증 토큰 추가
+    const token =
+      localStorage.getItem("token") ||
+      localStorage.getItem("access_token") ||
+      localStorage.getItem("authToken");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => {
