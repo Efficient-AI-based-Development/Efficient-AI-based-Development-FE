@@ -12,6 +12,12 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import TaskTagAndPrioritySelector from "./TaskTagAndPrioritySelector";
 import type { TaskType } from "../../../types/task";
+import {
+  startChatWithInitFile,
+  sendMessage,
+  getStream,
+  cancelSession,
+} from "../services/chatService";
 
 interface AddTaskModalProps {
   isOpen: boolean;
@@ -28,7 +34,7 @@ export default function AddTaskModal({
   isOpen,
   onClose,
   onSubmit,
-  projectId, // eslint-disable-line @typescript-eslint/no-unused-vars
+  projectId,
 }: AddTaskModalProps) {
   const [selectedType, setSelectedType] = useState<TaskType>("DEV");
   const [priority, setPriority] = useState<number>(5);
@@ -40,59 +46,82 @@ export default function AddTaskModal({
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [showOptions, setShowOptions] = useState(false);
   const [canCreateTask, setCanCreateTask] = useState(false);
+  const [chatSessionId, setChatSessionId] = useState<number | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // 새 메시지가 추가되면 스크롤을 맨 아래로
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // AI API 호출 함수 (나중에 실제 API로 교체)
-  const callAIAPI = async (userInput: string) => {
-    // TODO: 실제 AI API 호출로 교체 필요
-    // const response = await fetch('/api/ai/chat', {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify({
-    //         message: userInput,
-    //         type: selectedType,
-    //         priority: priority,
-    //         conversationHistory: messages
-    //     })
-    // });
-    // const data = await response.json();
-    // return data;
+  // 모달이 닫힐 때 세션 취소 및 초기화
+  useEffect(() => {
+    if (!isOpen && chatSessionId !== null) {
+      // 세션 취소
+      cancelSession(chatSessionId).catch((error) => {
+        console.error("세션 취소 실패:", error);
+      });
+      setChatSessionId(null);
+      // 스트리밍 중단
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      // 상태 초기화
+      setMessages([]);
+      setInputValue("");
+      setSelectedOptions([]);
+      setShowOptions(false);
+      setCanCreateTask(false);
+    }
+  }, [isOpen, chatSessionId]);
 
-    // === MOCK 데이터 (개발용) ===
-    return new Promise<{
-      content: string;
-      options?: string[];
-      canCreateTask?: boolean;
-    }>((resolve) => {
-      setTimeout(() => {
-        // 로그인 관련 키워드가 있으면 선택지 제공
-        const hasLoginKeyword =
-          userInput.includes("로그인") || userInput.includes("login");
+  // 스트리밍 응답에서 선택지와 canCreateTask 파싱
+  const parseStreamResponse = (
+    content: string,
+  ): {
+    options?: string[];
+    canCreateTask?: boolean;
+  } => {
+    const result: { options?: string[]; canCreateTask?: boolean } = {};
 
-        if (hasLoginKeyword) {
-          resolve({
-            content: `좋아요! 로그인 기능에는 다양한 하위 항목이 있어요\n어떤 부분을 구현하고 싶으신가요?`,
-            options: [
-              "이메일 / 비밀번호 로그인",
-              "소셜 로그인 (Google, Kakao)",
-              "세션 or JWT 토큰 인증",
-              "로그인 폼 UI",
-            ],
-            canCreateTask: false, // 아직 선택 안 함
-          });
-        } else {
-          resolve({
-            content: `${userInput}에 대한 작업을 이해했습니다. 추가 정보가 필요하시면 말씀해주세요.`,
-            canCreateTask: true, // 충분한 정보가 있음
-          });
-        }
-      }, 500);
-    });
+    // 선택지 파싱 (예: "options: [항목1, 항목2, 항목3]")
+    const optionsMatch = content.match(/options:\s*\[(.*?)\]/s);
+    if (optionsMatch) {
+      const optionsText = optionsMatch[1];
+      const options = optionsText
+        .split(",")
+        .map((opt) => opt.trim().replace(/^["']|["']$/g, ""))
+        .filter((opt) => opt.length > 0);
+      if (options.length > 0) {
+        result.options = options;
+      }
+    }
+
+    // canCreateTask 파싱 (예: "canCreateTask: true")
+    const canCreateMatch = content.match(/canCreateTask:\s*(true|false)/i);
+    if (canCreateMatch) {
+      result.canCreateTask = canCreateMatch[1].toLowerCase() === "true";
+    }
+
+    return result;
+  };
+
+  // 채팅 세션 시작
+  const initializeChatSession = async (initialMessage: string) => {
+    try {
+      const response = await startChatWithInitFile({
+        content_md: initialMessage,
+        file_type: "PROJECT",
+        project_id: projectId,
+      });
+      setChatSessionId(response.chat_id);
+      return response.chat_id;
+    } catch (error) {
+      console.error("채팅 세션 시작 실패:", error);
+      throw error;
+    }
   };
 
   const handleSend = async () => {
@@ -108,25 +137,85 @@ export default function AddTaskModal({
     setInputValue("");
 
     try {
-      // AI API 호출
-      const aiResponse = await callAIAPI(currentInput);
+      let sessionId = chatSessionId;
 
-      const aiMessage = {
-        role: "assistant" as const,
-        content: aiResponse.content,
-        options: aiResponse.options,
-      };
-
-      setMessages((prev) => [...prev, aiMessage]);
-
-      if (aiResponse.options) {
-        setShowOptions(true);
-        setSelectedOptions([]);
+      // 첫 메시지인 경우 세션 시작
+      if (sessionId === null) {
+        sessionId = await initializeChatSession(currentInput);
+      } else {
+        // 기존 세션에 메시지 전송
+        await sendMessage(sessionId, {
+          content_md: currentInput,
+        });
       }
 
-      // AI가 충분한 정보를 얻었다고 판단하면 Task 생성 가능
-      setCanCreateTask(aiResponse.canCreateTask ?? false);
-    } catch {
+      // 스트리밍 응답을 받을 메시지 추가 (빈 상태로 시작)
+      const assistantMessageIndex = messages.length;
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "", options: undefined },
+      ]);
+
+      let streamedContent = "";
+
+      // 스트리밍 응답 처리
+      await getStream(
+        sessionId,
+        (data: string) => {
+          streamedContent += data;
+          // 실시간으로 메시지 업데이트
+          setMessages((prev) => {
+            const updated = [...prev];
+            if (updated[assistantMessageIndex]) {
+              updated[assistantMessageIndex] = {
+                ...updated[assistantMessageIndex],
+                content: streamedContent,
+              };
+            }
+            return updated;
+          });
+        },
+        (error: Error) => {
+          console.error("스트리밍 에러:", error);
+          setMessages((prev) => {
+            const updated = [...prev];
+            if (updated[assistantMessageIndex]) {
+              updated[assistantMessageIndex] = {
+                ...updated[assistantMessageIndex],
+                content:
+                  streamedContent ||
+                  "죄송합니다. 일시적인 오류가 발생했습니다. 다시 시도해주세요.",
+              };
+            }
+            return updated;
+          });
+        },
+        () => {
+          // 스트리밍 완료 후 파싱
+          const parsed = parseStreamResponse(streamedContent);
+
+          setMessages((prev) => {
+            const updated = [...prev];
+            if (updated[assistantMessageIndex]) {
+              updated[assistantMessageIndex] = {
+                ...updated[assistantMessageIndex],
+                content: streamedContent,
+                options: parsed.options,
+              };
+            }
+            return updated;
+          });
+
+          if (parsed.options) {
+            setShowOptions(true);
+            setSelectedOptions([]);
+          }
+
+          setCanCreateTask(parsed.canCreateTask ?? false);
+        },
+      );
+    } catch (error) {
+      console.error("메시지 전송 실패:", error);
       // 에러 처리
       const errorMessage = {
         role: "assistant" as const,
@@ -164,8 +253,8 @@ export default function AddTaskModal({
     );
   };
 
-  const handleContinueChat = () => {
-    if (selectedOptions.length === 0) return;
+  const handleContinueChat = async () => {
+    if (selectedOptions.length === 0 || !chatSessionId) return;
 
     const selectedText = `다음 항목들을 선택했습니다:\n${selectedOptions.map((o) => `- ${o}`).join("\n")}`;
     const userMessage = { role: "user" as const, content: selectedText };
@@ -174,16 +263,86 @@ export default function AddTaskModal({
     setIsSending(true);
     setShowOptions(false);
 
-    // AI 응답
-    setTimeout(() => {
-      const aiMessage = {
+    try {
+      // 메시지 전송
+      await sendMessage(chatSessionId, {
+        content_md: selectedText,
+      });
+
+      // 스트리밍 응답을 받을 메시지 추가
+      const assistantMessageIndex = messages.length;
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "", options: undefined },
+      ]);
+
+      let streamedContent = "";
+
+      // 스트리밍 응답 처리
+      await getStream(
+        chatSessionId,
+        (data: string) => {
+          streamedContent += data;
+          setMessages((prev) => {
+            const updated = [...prev];
+            if (updated[assistantMessageIndex]) {
+              updated[assistantMessageIndex] = {
+                ...updated[assistantMessageIndex],
+                content: streamedContent,
+              };
+            }
+            return updated;
+          });
+        },
+        (error: Error) => {
+          console.error("스트리밍 에러:", error);
+          setMessages((prev) => {
+            const updated = [...prev];
+            if (updated[assistantMessageIndex]) {
+              updated[assistantMessageIndex] = {
+                ...updated[assistantMessageIndex],
+                content:
+                  streamedContent ||
+                  "죄송합니다. 일시적인 오류가 발생했습니다. 다시 시도해주세요.",
+              };
+            }
+            return updated;
+          });
+        },
+        () => {
+          // 스트리밍 완료 후 파싱
+          const parsed = parseStreamResponse(streamedContent);
+
+          setMessages((prev) => {
+            const updated = [...prev];
+            if (updated[assistantMessageIndex]) {
+              updated[assistantMessageIndex] = {
+                ...updated[assistantMessageIndex],
+                content: streamedContent,
+                options: parsed.options,
+              };
+            }
+            return updated;
+          });
+
+          if (parsed.options) {
+            setShowOptions(true);
+            setSelectedOptions([]);
+          }
+
+          setCanCreateTask(parsed.canCreateTask ?? true); // 선택 완료 후 일반적으로 Task 생성 가능
+        },
+      );
+    } catch (error) {
+      console.error("메시지 전송 실패:", error);
+      const errorMessage = {
         role: "assistant" as const,
-        content: `알겠습니다! 선택하신 ${selectedOptions.length}개 항목으로 작업을 진행하겠습니다.`,
+        content: "죄송합니다. 일시적인 오류가 발생했습니다. 다시 시도해주세요.",
       };
-      setMessages((prev) => [...prev, aiMessage]);
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsSending(false);
-      setCanCreateTask(true); // 선택 완료 후 Task 생성 가능
-    }, 500);
+    }
   };
 
   return (
