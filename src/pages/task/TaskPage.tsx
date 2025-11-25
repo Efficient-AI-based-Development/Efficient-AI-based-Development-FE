@@ -38,19 +38,18 @@ export default function TaskPage() {
   // 태스크 목록 불러오기
   useEffect(() => {
     const fetchTasks = async () => {
-      console.log("[TaskPage] 태스크 목록 조회 시작");
       try {
         const response = await getTasks(PROJECT_ID);
-        console.log("[TaskPage] API 응답 받음:", response);
 
         // API 응답을 Task 형식으로 변환
         const tasks = response.data.map(mapApiTaskToTask);
-        console.log("[TaskPage] 변환된 태스크 목록:", tasks);
 
         setTasks(tasks);
-        console.log("[TaskPage] 태스크 목록 설정 완료");
       } catch (error) {
-        console.error("[TaskPage] 태스크 목록 조회 실패:", error);
+        // 에러 처리 - 조용히 실패 (초기 로딩 시)
+        if (import.meta.env.DEV) {
+          console.error("태스크 목록 조회 실패:", error);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -71,11 +70,9 @@ export default function TaskPage() {
     taskId: string,
     newStatus: Task["status"],
   ) => {
-    console.log("[TaskPage] 태스크 상태 업데이트:", taskId, newStatus);
     try {
       const taskIdNum = Number(taskId);
       if (isNaN(taskIdNum)) {
-        console.error("[TaskPage] 유효하지 않은 Task ID:", taskId);
         return;
       }
 
@@ -91,7 +88,6 @@ export default function TaskPage() {
 
       // API 호출
       const response = await updateTask(taskIdNum, { status: newStatus });
-      console.log("[TaskPage] 태스크 상태 업데이트 성공:", response);
 
       // API 응답으로 업데이트
       const updatedTask = mapApiTaskToTask(response.data);
@@ -99,14 +95,20 @@ export default function TaskPage() {
         prevTasks.map((task) => (task.id === taskId ? updatedTask : task)),
       );
     } catch (error) {
-      console.error("[TaskPage] 태스크 상태 업데이트 실패:", error);
       // 에러 발생 시 다시 불러오기
       try {
         const response = await getTasks(PROJECT_ID);
         const tasks = response.data.map(mapApiTaskToTask);
         setTasks(tasks);
       } catch (fetchError) {
-        console.error("[TaskPage] 태스크 목록 재조회 실패:", fetchError);
+        // 재조회 실패 - 상태 롤백
+        if (import.meta.env.DEV) {
+          console.error(
+            "태스크 상태 업데이트 및 재조회 실패:",
+            error,
+            fetchError,
+          );
+        }
       }
     }
   };
@@ -117,9 +119,6 @@ export default function TaskPage() {
     priority: number;
     message: string;
   }) => {
-    console.log("[TaskPage] handleAddTask 호출됨");
-    console.log("[TaskPage] 입력 데이터:", data);
-
     try {
       // 메시지에서 title과 description 추출
       const messageLines = data.message
@@ -127,9 +126,6 @@ export default function TaskPage() {
         .filter((line) => line.trim());
       const title = messageLines[0] || "새로운 태스크";
       const description = data.message;
-
-      console.log("[TaskPage] 추출된 title:", title);
-      console.log("[TaskPage] 추출된 description:", description);
 
       // API 호출
       const response = await createTask(PROJECT_ID, {
@@ -139,8 +135,6 @@ export default function TaskPage() {
         type: data.type,
         priority: data.priority,
       });
-
-      console.log("[TaskPage] API 응답 받음:", response);
 
       // API 응답을 Task 형식으로 변환
       const newTask: Task = {
@@ -155,54 +149,47 @@ export default function TaskPage() {
         updatedAt: response.data.updated_at,
       };
 
-      console.log("[TaskPage] 변환된 Task 객체:", newTask);
-
       // 성공 시 태스크 목록에 추가
       setTasks((prevTasks) => [...prevTasks, newTask]);
-      console.log("[TaskPage] 태스크 목록에 추가 완료");
       setIsModalOpen(false);
     } catch (error) {
-      console.error("[TaskPage] 태스크 추가 실패:", error);
       // 에러 발생 시 다시 불러오기
       try {
-        const response = await fetch("/api/tasks");
-        const tasksData = await response.json();
-        setTasks(tasksData);
+        const response = await getTasks(PROJECT_ID);
+        const tasks = response.data.map(mapApiTaskToTask);
+        setTasks(tasks);
       } catch (fetchError) {
-        console.error("[TaskPage] 태스크 목록 재조회 실패:", fetchError);
+        // 재조회 실패
+        if (import.meta.env.DEV) {
+          console.error("태스크 추가 및 재조회 실패:", error, fetchError);
+        }
       }
     }
   };
 
   // 태스크 클릭 핸들러
   const handleTaskClick = async (task: Task) => {
-    console.log("[TaskPage] 태스크 클릭:", task);
     try {
       // API에서 최신 태스크 정보 가져오기
       const taskId = Number(task.id);
       if (isNaN(taskId)) {
-        console.warn("[TaskPage] 유효하지 않은 Task ID:", task.id);
         setSelectedTask(task);
         setIsDetailModalOpen(true);
         return;
       }
 
-      console.log("[TaskPage] 태스크 상세 조회 시작, Task ID:", taskId);
       const response = await getTask(taskId);
-      console.log("[TaskPage] 태스크 상세 조회 응답:", response);
 
       // API 응답을 Task 형식으로 변환
       const updatedTask = mapApiTaskToTask(response.data);
-      console.log("[TaskPage] 변환된 태스크:", updatedTask);
 
       setSelectedTask(updatedTask);
       setIsDetailModalOpen(true);
     } catch (error) {
-      console.error(
-        "[TaskPage] 태스크 상세 조회 실패, 기존 데이터 사용:",
-        error,
-      );
       // 에러 발생 시 기존 task 데이터 사용
+      if (import.meta.env.DEV) {
+        console.error("태스크 상세 조회 실패:", error);
+      }
       setSelectedTask(task);
       setIsDetailModalOpen(true);
     }
@@ -210,11 +197,9 @@ export default function TaskPage() {
 
   // 태스크 내용 업데이트 핸들러
   const handleUpdateTaskContent = async (taskId: string, content: string) => {
-    console.log("[TaskPage] 태스크 내용 업데이트:", taskId);
     try {
       const taskIdNum = Number(taskId);
       if (isNaN(taskIdNum)) {
-        console.error("[TaskPage] 유효하지 않은 Task ID:", taskId);
         return;
       }
 
@@ -234,7 +219,6 @@ export default function TaskPage() {
         description_md: content,
         description: content,
       });
-      console.log("[TaskPage] 태스크 내용 업데이트 성공:", response);
 
       // API 응답으로 업데이트
       const updatedTask = mapApiTaskToTask(response.data);
@@ -246,24 +230,28 @@ export default function TaskPage() {
         setSelectedTask(updatedTask);
       }
     } catch (error) {
-      console.error("[TaskPage] 태스크 내용 업데이트 실패:", error);
       try {
         const response = await getTasks(PROJECT_ID);
         const tasks = response.data.map(mapApiTaskToTask);
         setTasks(tasks);
       } catch (fetchError) {
-        console.error("[TaskPage] 태스크 목록 재조회 실패:", fetchError);
+        // 재조회 실패
+        if (import.meta.env.DEV) {
+          console.error(
+            "태스크 내용 업데이트 및 재조회 실패:",
+            error,
+            fetchError,
+          );
+        }
       }
     }
   };
 
   // 태스크 타입 업데이트 핸들러
   const handleUpdateTaskType = async (taskId: string, type: TaskType) => {
-    console.log("[TaskPage] 태스크 타입 업데이트:", taskId, type);
     try {
       const taskIdNum = Number(taskId);
       if (isNaN(taskIdNum)) {
-        console.error("[TaskPage] 유효하지 않은 Task ID:", taskId);
         return;
       }
 
@@ -280,7 +268,6 @@ export default function TaskPage() {
 
       // API 호출
       const response = await updateTask(taskIdNum, { type });
-      console.log("[TaskPage] 태스크 타입 업데이트 성공:", response);
 
       // API 응답으로 업데이트
       const updatedTask = mapApiTaskToTask(response.data);
@@ -292,24 +279,28 @@ export default function TaskPage() {
         setSelectedTask(updatedTask);
       }
     } catch (error) {
-      console.error("[TaskPage] 태스크 타입 업데이트 실패:", error);
       try {
         const response = await getTasks(PROJECT_ID);
         const tasks = response.data.map(mapApiTaskToTask);
         setTasks(tasks);
       } catch (fetchError) {
-        console.error("[TaskPage] 태스크 목록 재조회 실패:", fetchError);
+        // 재조회 실패
+        if (import.meta.env.DEV) {
+          console.error(
+            "태스크 타입 업데이트 및 재조회 실패:",
+            error,
+            fetchError,
+          );
+        }
       }
     }
   };
 
   // 태스크 중요도 업데이트 핸들러
   const handleUpdateTaskPriority = async (taskId: string, priority: number) => {
-    console.log("[TaskPage] 태스크 중요도 업데이트:", taskId, priority);
     try {
       const taskIdNum = Number(taskId);
       if (isNaN(taskIdNum)) {
-        console.error("[TaskPage] 유효하지 않은 Task ID:", taskId);
         return;
       }
 
@@ -326,7 +317,6 @@ export default function TaskPage() {
 
       // API 호출
       const response = await updateTask(taskIdNum, { priority });
-      console.log("[TaskPage] 태스크 중요도 업데이트 성공:", response);
 
       // API 응답으로 업데이트
       const updatedTask = mapApiTaskToTask(response.data);
@@ -338,24 +328,28 @@ export default function TaskPage() {
         setSelectedTask(updatedTask);
       }
     } catch (error) {
-      console.error("[TaskPage] 태스크 중요도 업데이트 실패:", error);
       try {
         const response = await getTasks(PROJECT_ID);
         const tasks = response.data.map(mapApiTaskToTask);
         setTasks(tasks);
       } catch (fetchError) {
-        console.error("[TaskPage] 태스크 목록 재조회 실패:", fetchError);
+        // 재조회 실패
+        if (import.meta.env.DEV) {
+          console.error(
+            "태스크 중요도 업데이트 및 재조회 실패:",
+            error,
+            fetchError,
+          );
+        }
       }
     }
   };
 
   // 태스크 시작 (TODO → IN_PROGRESS)
   const handleStartTask = async (taskId: string) => {
-    console.log("[TaskPage] 태스크 시작:", taskId);
     try {
       const taskIdNum = Number(taskId);
       if (isNaN(taskIdNum)) {
-        console.error("[TaskPage] 유효하지 않은 Task ID:", taskId);
         return;
       }
 
@@ -370,7 +364,6 @@ export default function TaskPage() {
 
       // API 호출
       const response = await updateTask(taskIdNum, { status: "IN_PROGRESS" });
-      console.log("[TaskPage] 태스크 시작 성공:", response);
 
       // API 응답으로 업데이트
       const updatedTask = mapApiTaskToTask(response.data);
@@ -378,24 +371,24 @@ export default function TaskPage() {
         prevTasks.map((task) => (task.id === taskId ? updatedTask : task)),
       );
     } catch (error) {
-      console.error("[TaskPage] 태스크 시작 실패:", error);
       try {
         const response = await getTasks(PROJECT_ID);
         const tasks = response.data.map(mapApiTaskToTask);
         setTasks(tasks);
       } catch (fetchError) {
-        console.error("[TaskPage] 태스크 목록 재조회 실패:", fetchError);
+        // 재조회 실패
+        if (import.meta.env.DEV) {
+          console.error("태스크 시작 및 재조회 실패:", error, fetchError);
+        }
       }
     }
   };
 
   // 태스크 삭제 핸들러
   const handleDeleteTask = async (taskId: string) => {
-    console.log("[TaskPage] 태스크 삭제:", taskId);
     try {
       const taskIdNum = Number(taskId);
       if (isNaN(taskIdNum)) {
-        console.error("[TaskPage] 유효하지 않은 Task ID:", taskId);
         return;
       }
 
@@ -410,27 +403,26 @@ export default function TaskPage() {
 
       // API 호출
       await deleteTask(taskIdNum);
-      console.log("[TaskPage] 태스크 삭제 성공");
     } catch (error) {
-      console.error("[TaskPage] 태스크 삭제 실패:", error);
       // 에러 발생 시 다시 불러오기
       try {
         const response = await getTasks(PROJECT_ID);
         const tasks = response.data.map(mapApiTaskToTask);
         setTasks(tasks);
       } catch (fetchError) {
-        console.error("[TaskPage] 태스크 목록 재조회 실패:", fetchError);
+        // 재조회 실패
+        if (import.meta.env.DEV) {
+          console.error("태스크 거절 및 재조회 실패:", error, fetchError);
+        }
       }
     }
   };
 
   // REVIEW 상태 거절 핸들러 (REVIEW → TODO)
   const handleRejectTask = async (taskId: string) => {
-    console.log("[TaskPage] 태스크 거절:", taskId);
     try {
       const taskIdNum = Number(taskId);
       if (isNaN(taskIdNum)) {
-        console.error("[TaskPage] 유효하지 않은 Task ID:", taskId);
         return;
       }
 
@@ -447,7 +439,6 @@ export default function TaskPage() {
 
       // API 호출
       const response = await updateTask(taskIdNum, { status: "TODO" });
-      console.log("[TaskPage] 태스크 거절 성공:", response);
 
       // API 응답으로 업데이트
       const updatedTask = mapApiTaskToTask(response.data);
@@ -459,24 +450,24 @@ export default function TaskPage() {
         setSelectedTask(updatedTask);
       }
     } catch (error) {
-      console.error("[TaskPage] 태스크 거절 실패:", error);
       try {
         const response = await getTasks(PROJECT_ID);
         const tasks = response.data.map(mapApiTaskToTask);
         setTasks(tasks);
       } catch (fetchError) {
-        console.error("[TaskPage] 태스크 목록 재조회 실패:", fetchError);
+        // 재조회 실패
+        if (import.meta.env.DEV) {
+          console.error("태스크 승인 및 재조회 실패:", error, fetchError);
+        }
       }
     }
   };
 
   // REVIEW 상태 수락 핸들러 (REVIEW → DONE)
   const handleApproveTask = async (taskId: string) => {
-    console.log("[TaskPage] 태스크 승인:", taskId);
     try {
       const taskIdNum = Number(taskId);
       if (isNaN(taskIdNum)) {
-        console.error("[TaskPage] 유효하지 않은 Task ID:", taskId);
         return;
       }
 
@@ -493,7 +484,6 @@ export default function TaskPage() {
 
       // API 호출
       const response = await updateTask(taskIdNum, { status: "DONE" });
-      console.log("[TaskPage] 태스크 승인 성공:", response);
 
       // API 응답으로 업데이트
       const updatedTask = mapApiTaskToTask(response.data);
@@ -505,13 +495,15 @@ export default function TaskPage() {
         setSelectedTask(updatedTask);
       }
     } catch (error) {
-      console.error("[TaskPage] 태스크 승인 실패:", error);
       try {
         const response = await getTasks(PROJECT_ID);
         const tasks = response.data.map(mapApiTaskToTask);
         setTasks(tasks);
       } catch (fetchError) {
-        console.error("[TaskPage] 태스크 목록 재조회 실패:", fetchError);
+        // 재조회 실패
+        if (import.meta.env.DEV) {
+          console.error("태스크 승인 및 재조회 실패:", error, fetchError);
+        }
       }
     }
   };

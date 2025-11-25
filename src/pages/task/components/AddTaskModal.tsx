@@ -124,8 +124,7 @@ export default function AddTaskModal({
 
       // AI가 충분한 정보를 얻었다고 판단하면 Task 생성 가능
       setCanCreateTask(aiResponse.canCreateTask ?? false);
-    } catch (error) {
-      console.error("AI API 호출 실패:", error);
+    } catch {
       // 에러 처리
       const errorMessage = {
         role: "assistant" as const,

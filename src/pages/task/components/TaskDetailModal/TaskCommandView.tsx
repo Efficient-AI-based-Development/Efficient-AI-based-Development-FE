@@ -67,8 +67,7 @@ export default function TaskCommandView({
           },
         });
         setSession(newSession);
-      } catch (error) {
-        console.error("[TaskCommandView] 초기화 실패:", error);
+      } catch {
         toast({
           title: "MCP 세션 초기화에 실패했습니다.",
           variant: "destructive",
@@ -117,8 +116,8 @@ export default function TaskCommandView({
           clearInterval(interval);
           pollingIntervalRef.current = null;
         }
-      } catch (error) {
-        console.error("[TaskCommandView] 실행 상태 조회 실패:", error);
+      } catch {
+        // 실행 상태 조회 실패
       }
     }, 2000); // 2초마다 폴링
 
@@ -168,8 +167,7 @@ export default function TaskCommandView({
         title: "실행이 시작되었습니다.",
         duration: 3000,
       });
-    } catch (error) {
-      console.error("[TaskCommandView] 실행 생성 실패:", error);
+    } catch {
       toast({
         title: "실행 생성에 실패했습니다.",
         variant: "destructive",
@@ -191,8 +189,7 @@ export default function TaskCommandView({
         title: "실행이 취소되었습니다.",
         duration: 3000,
       });
-    } catch (error) {
-      console.error("[TaskCommandView] 실행 취소 실패:", error);
+    } catch {
       toast({
         title: "실행 취소에 실패했습니다.",
         variant: "destructive",

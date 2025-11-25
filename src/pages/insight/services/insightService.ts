@@ -24,30 +24,27 @@ export interface InsightsSummaryResponse {
 }
 
 /**
+ * Task 인사이트 응답 타입
+ * GET /api/v1/tasks/insights?project_id={project_id}
+ */
+export interface TaskInsightsResponse {
+  task_completed_probability: number; // Task 완료율 (float)
+  task_last_updated: string; // 마지막 진행 날짜 (ISO string)
+  QA_test: number; // QA 통과 Task (default: 0)
+}
+
+/**
  * 프로젝트 인사이트 조회
- * GET /api/v1/insights/projects/{project_id}/insights
+ * GET /api/v1/projects/{project_id}/insights
  */
 export async function getProjectInsights(
   projectId: number,
 ): Promise<InsightsResponse> {
-  console.log("[InsightService] 프로젝트 인사이트 조회 시작");
-  console.log("[InsightService] Project ID:", projectId);
-  console.log(
-    "[InsightService] 요청 URL:",
-    `/api/v1/insights/projects/${projectId}/insights`,
+  const response = await apiClient.get<InsightsResponse>(
+    `/api/v1/projects/${projectId}/insights`,
   );
 
-  try {
-    const response = await apiClient.get<InsightsResponse>(
-      `/api/v1/insights/projects/${projectId}/insights`,
-    );
-
-    console.log("[InsightService] API 응답 받음:", response.data);
-    return response.data;
-  } catch (error) {
-    console.error("[InsightService] 프로젝트 인사이트 조회 실패:", error);
-    throw error;
-  }
+  return response.data;
 }
 
 /**
@@ -55,21 +52,28 @@ export async function getProjectInsights(
  * GET /api/v1/insights/summary
  */
 export async function getInsightsSummary(): Promise<InsightsSummaryResponse> {
-  console.log("[InsightService] 전체 인사이트 요약 조회 시작");
-  console.log("[InsightService] 요청 URL:", `/api/v1/insights/summary`);
+  const response = await apiClient.get<InsightsSummaryResponse>(
+    `/api/v1/insights/summary`,
+  );
 
-  try {
-    const response = await apiClient.get<InsightsSummaryResponse>(
-      `/api/v1/insights/summary`,
-    );
+  return response.data;
+}
 
-    console.log(
-      "[InsightService] 전체 인사이트 요약 응답 받음:",
-      response.data,
-    );
-    return response.data;
-  } catch (error) {
-    console.error("[InsightService] 전체 인사이트 요약 조회 실패:", error);
-    throw error;
-  }
+/**
+ * Task 인사이트 조회
+ * GET /api/v1/tasks/insights?project_id={project_id}
+ */
+export async function getTaskInsights(
+  projectId: number,
+): Promise<TaskInsightsResponse> {
+  const response = await apiClient.get<TaskInsightsResponse>(
+    `/api/v1/tasks/insights`,
+    {
+      params: {
+        project_id: projectId,
+      },
+    },
+  );
+
+  return response.data;
 }

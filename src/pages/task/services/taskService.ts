@@ -102,36 +102,15 @@ export async function createTask(
     due_at: data.due_at,
   };
 
-  console.log("[API] 태스크 생성 요청 시작");
-  console.log("[API] Project ID:", projectId);
-  console.log("[API] 요청 URL:", `/api/v1/projects/${projectId}/tasks`);
-  console.log("[API] 요청 Body:", JSON.stringify(requestBody, null, 2));
-
   try {
     const response = await apiClient.post<CreateTaskResponse>(
       `/api/v1/projects/${projectId}/tasks`,
       requestBody,
     );
 
-    console.log("[API] 태스크 생성 성공");
-    console.log("[API] 응답 Status:", response.status);
-    console.log("[API] 응답 Data:", JSON.stringify(response.data, null, 2));
-
     return response.data;
   } catch (error) {
-    const axiosError = error as AxiosError;
-    console.error("[API] 태스크 생성 실패");
-    console.error("[API] 에러 상세:", axiosError);
-    if (axiosError.response) {
-      console.error("[API] 응답 Status:", axiosError.response.status);
-      console.error("[API] 응답 Data:", axiosError.response.data);
-    } else if (axiosError.request) {
-      console.error("[API] 요청은 전송되었으나 응답을 받지 못함");
-      console.error("[API] 요청 정보:", axiosError.request);
-    } else {
-      console.error("[API] 요청 설정 중 에러:", axiosError.message);
-    }
-    throw axiosError;
+    throw error as AxiosError;
   }
 }
 
@@ -161,35 +140,12 @@ export async function getTasks(
   const queryString = params.toString();
   const url = `/api/v1/projects/${projectId}/tasks${queryString ? `?${queryString}` : ""}`;
 
-  console.log("[API] 태스크 목록 조회 요청 시작");
-  console.log("[API] Project ID:", projectId);
-  console.log("[API] 요청 URL:", url);
-  console.log("[API] Query Params:", options);
-
   try {
     const response = await apiClient.get<ListTasksResponse>(url);
 
-    console.log("[API] 태스크 목록 조회 성공");
-    console.log("[API] 응답 Status:", response.status);
-    console.log("[API] 응답 Data 개수:", response.data.data.length);
-    console.log("[API] 응답 Meta:", response.data.meta);
-    console.log("[API] 응답 Data:", JSON.stringify(response.data, null, 2));
-
     return response.data;
   } catch (error) {
-    const axiosError = error as AxiosError;
-    console.error("[API] 태스크 목록 조회 실패");
-    console.error("[API] 에러 상세:", axiosError);
-    if (axiosError.response) {
-      console.error("[API] 응답 Status:", axiosError.response.status);
-      console.error("[API] 응답 Data:", axiosError.response.data);
-    } else if (axiosError.request) {
-      console.error("[API] 요청은 전송되었으나 응답을 받지 못함");
-      console.error("[API] 요청 정보:", axiosError.request);
-    } else {
-      console.error("[API] 요청 설정 중 에러:", axiosError.message);
-    }
-    throw axiosError;
+    throw error as AxiosError;
   }
 }
 
@@ -200,32 +156,12 @@ export async function getTasks(
 export async function getTask(taskId: number): Promise<GetTaskResponse> {
   const url = `/api/v1/tasks/${taskId}`;
 
-  console.log("[API] 태스크 상세 조회 요청 시작");
-  console.log("[API] Task ID:", taskId);
-  console.log("[API] 요청 URL:", url);
-
   try {
     const response = await apiClient.get<GetTaskResponse>(url);
 
-    console.log("[API] 태스크 상세 조회 성공");
-    console.log("[API] 응답 Status:", response.status);
-    console.log("[API] 응답 Data:", JSON.stringify(response.data, null, 2));
-
     return response.data;
   } catch (error) {
-    const axiosError = error as AxiosError;
-    console.error("[API] 태스크 상세 조회 실패");
-    console.error("[API] 에러 상세:", axiosError);
-    if (axiosError.response) {
-      console.error("[API] 응답 Status:", axiosError.response.status);
-      console.error("[API] 응답 Data:", axiosError.response.data);
-    } else if (axiosError.request) {
-      console.error("[API] 요청은 전송되었으나 응답을 받지 못함");
-      console.error("[API] 요청 정보:", axiosError.request);
-    } else {
-      console.error("[API] 요청 설정 중 에러:", axiosError.message);
-    }
-    throw axiosError;
+    throw error as AxiosError;
   }
 }
 
@@ -264,36 +200,15 @@ export async function updateTask(
     requestBody.status = statusMapping[data.status];
   }
 
-  console.log("[API] 태스크 수정 요청 시작");
-  console.log("[API] Task ID:", taskId);
-  console.log("[API] 요청 URL:", url);
-  console.log("[API] 요청 Body:", JSON.stringify(requestBody, null, 2));
-
   try {
     const response = await apiClient.patch<UpdateTaskResponse>(
       url,
       requestBody,
     );
 
-    console.log("[API] 태스크 수정 성공");
-    console.log("[API] 응답 Status:", response.status);
-    console.log("[API] 응답 Data:", JSON.stringify(response.data, null, 2));
-
     return response.data;
   } catch (error) {
-    const axiosError = error as AxiosError;
-    console.error("[API] 태스크 수정 실패");
-    console.error("[API] 에러 상세:", axiosError);
-    if (axiosError.response) {
-      console.error("[API] 응답 Status:", axiosError.response.status);
-      console.error("[API] 응답 Data:", axiosError.response.data);
-    } else if (axiosError.request) {
-      console.error("[API] 요청은 전송되었으나 응답을 받지 못함");
-      console.error("[API] 요청 정보:", axiosError.request);
-    } else {
-      console.error("[API] 요청 설정 중 에러:", axiosError.message);
-    }
-    throw axiosError;
+    throw error as AxiosError;
   }
 }
 
@@ -304,31 +219,12 @@ export async function updateTask(
 export async function deleteTask(taskId: number): Promise<void> {
   const url = `/api/v1/tasks/${taskId}`;
 
-  console.log("[API] 태스크 삭제 요청 시작");
-  console.log("[API] Task ID:", taskId);
-  console.log("[API] 요청 URL:", url);
-
   try {
-    const response = await apiClient.delete(url);
-
-    console.log("[API] 태스크 삭제 성공");
-    console.log("[API] 응답 Status:", response.status);
-    console.log("[API] 응답 Data:", response.data);
+    await apiClient.delete(url);
 
     return;
   } catch (error) {
     const axiosError = error as AxiosError;
-    console.error("[API] 태스크 삭제 실패");
-    console.error("[API] 에러 상세:", axiosError);
-    if (axiosError.response) {
-      console.error("[API] 응답 Status:", axiosError.response.status);
-      console.error("[API] 응답 Data:", axiosError.response.data);
-    } else if (axiosError.request) {
-      console.error("[API] 요청은 전송되었으나 응답을 받지 못함");
-      console.error("[API] 요청 정보:", axiosError.request);
-    } else {
-      console.error("[API] 요청 설정 중 에러:", axiosError.message);
-    }
     throw axiosError;
   }
 }
