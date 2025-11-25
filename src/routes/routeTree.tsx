@@ -25,7 +25,6 @@ const ProjectSettingPage = lazy(
 const MyProjectsPage = lazy(() => import("@/pages/my-projects/MyProjectsPage"));
 const McpPage = lazy(() => import("@/pages/mcp/McpPage"));
 const GuidePage = lazy(() => import("@/pages/guide/GuidePage"));
-const AccountPage = lazy(() => import("@/pages/account/AccountPage"));
 const LoginPage = lazy(() => import("@/pages/auth/LoginPage"));
 
 const rootRoute = createRootRoute({
@@ -141,6 +140,13 @@ const taskRoute = createRoute({
 const insightRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/insight",
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): {
+    projectId?: string;
+  } => ({
+    projectId: search.projectId ? String(search.projectId) : undefined,
+  }),
   component: () => (
     <Suspense fallback={<div className="p-6"> 로딩중...</div>}>
       <InsightPage />
@@ -188,16 +194,6 @@ const guideRoute = createRoute({
   ),
 });
 
-const accountRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/account",
-  component: () => (
-    <Suspense fallback={<div className="p-6"> 로딩중...</div>}>
-      <AccountPage />
-    </Suspense>
-  ),
-});
-
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
@@ -221,7 +217,6 @@ export const routeTree = rootRoute.addChildren([
   myProjectsRoute,
   mcpRoute,
   guideRoute,
-  accountRoute,
   loginRoute,
 ]);
 export const router = createRouter({ routeTree });

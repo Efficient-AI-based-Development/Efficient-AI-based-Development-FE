@@ -48,11 +48,7 @@ export default function TaskCommandView({
         );
 
         if (!activeConnection) {
-          toast({
-            title: "활성 MCP 연결을 찾을 수 없습니다.",
-            description: "프로젝트 설정에서 MCP 연결을 확인하세요.",
-            variant: "destructive",
-          });
+          // 연결이 없을 때는 조용히 처리 (에러 토스트 제거)
           setIsInitializing(false);
           return;
         }
@@ -67,11 +63,9 @@ export default function TaskCommandView({
           },
         });
         setSession(newSession);
-      } catch {
-        toast({
-          title: "MCP 세션 초기화에 실패했습니다.",
-          variant: "destructive",
-        });
+      } catch (error) {
+        // 세션 초기화 실패 시 조용히 처리
+        console.error("[TaskCommandView] MCP 세션 초기화 실패:", error);
       } finally {
         setIsInitializing(false);
       }

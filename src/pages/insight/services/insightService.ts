@@ -25,7 +25,7 @@ export interface InsightsSummaryResponse {
 
 /**
  * Task 인사이트 응답 타입
- * GET /api/v1/tasks/insights?project_id={project_id}
+ * GET /api/v1/insights/projects/{project_id}/insights
  */
 export interface TaskInsightsResponse {
   task_completed_probability: number; // Task 완료율 (float)
@@ -61,18 +61,13 @@ export async function getInsightsSummary(): Promise<InsightsSummaryResponse> {
 
 /**
  * Task 인사이트 조회
- * GET /api/v1/tasks/insights?project_id={project_id}
+ * GET /api/v1/insights/projects/{project_id}/insights
  */
 export async function getTaskInsights(
   projectId: number,
 ): Promise<TaskInsightsResponse> {
   const response = await apiClient.get<TaskInsightsResponse>(
-    `/api/v1/tasks/insights`,
-    {
-      params: {
-        project_id: projectId,
-      },
-    },
+    `/api/v1/insights/projects/${projectId}/insights`,
   );
 
   return response.data;

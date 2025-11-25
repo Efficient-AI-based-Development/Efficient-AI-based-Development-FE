@@ -13,19 +13,27 @@ import {
   toKstDateKey,
   getYesterdayKey,
 } from "./insightMetrics";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { getTaskInsights } from "./services/insightService";
 import type { TaskInsightsResponse } from "./services/insightService";
 
 export default function InsightPage() {
   const navigate = useNavigate();
+  const search = useSearch({ from: "/insight" });
   const [taskInsights, setTaskInsights] = useState<TaskInsightsResponse | null>(
     null,
   );
   const [loading, setLoading] = useState(true);
 
-  // TODO: 실제 프로젝트 ID로 변경 필요
-  const PROJECT_ID = 1;
+  // URL에서 projectId 가져오기
+  const DEFAULT_PROJECT_ID = 1;
+  const parsedProjectId = search.projectId
+    ? Number(search.projectId)
+    : DEFAULT_PROJECT_ID;
+
+  const PROJECT_ID = Number.isNaN(parsedProjectId)
+    ? DEFAULT_PROJECT_ID
+    : parsedProjectId;
 
   // 인사이트 데이터 불러오기
   useEffect(() => {
@@ -36,10 +44,13 @@ export default function InsightPage() {
           const taskInsightsData = await getTaskInsights(PROJECT_ID);
           setTaskInsights(taskInsightsData);
         } catch (taskError: unknown) {
-          // 501 에러는 무시 (아직 구현되지 않은 API)
+          // 501, 422 에러는 무시 (아직 구현되지 않았거나 유효하지 않은 API)
           const axiosError = taskError as { response?: { status?: number } };
-          if (axiosError?.response?.status !== 501) {
-            // 501이 아닌 에러만 처리
+          if (
+            axiosError?.response?.status !== 501 &&
+            axiosError?.response?.status !== 422
+          ) {
+            // 501, 422가 아닌 에러만 처리
             if (import.meta.env.DEV) {
               console.error("Task 인사이트 조회 실패:", taskError);
             }
@@ -55,7 +66,7 @@ export default function InsightPage() {
       }
     };
     fetchInsights();
-  }, []);
+  }, [PROJECT_ID]);
 
   const { todayKey, yesterdayKey } = useMemo(() => {
     return { todayKey: toKstDateKey(), yesterdayKey: getYesterdayKey() };
