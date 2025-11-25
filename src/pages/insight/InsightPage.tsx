@@ -4,7 +4,6 @@ import KpiCard from "./components/KpiCard";
 import LinkCard from "./components/LinkCard";
 import CircularChart from "./components/CircularChart";
 import {
-  computeMetrics,
   diffNumber,
   formatDOffset,
   formatKoreanDate,
@@ -14,28 +13,48 @@ import {
   toKstDateKey,
   getYesterdayKey,
 } from "./insightMetrics";
-import type { Task } from "../../types/task";
 import { useNavigate } from "@tanstack/react-router";
+import { getTaskInsights } from "./services/insightService";
+import type { TaskInsightsResponse } from "./services/insightService";
 
 export default function InsightPage() {
   const navigate = useNavigate();
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [taskInsights, setTaskInsights] = useState<TaskInsightsResponse | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
 
-  // 태스크 불러오기
+  // TODO: 실제 프로젝트 ID로 변경 필요
+  const PROJECT_ID = 1;
+
+  // 인사이트 데이터 불러오기
   useEffect(() => {
-    const fetchTasks = async () => {
+    const fetchInsights = async () => {
       try {
-        const res = await fetch("/api/tasks");
-        const data = (await res.json()) as Task[];
-        setTasks(data);
-      } catch (e) {
-        console.error(e);
+        // Task 인사이트 조회
+        try {
+          const taskInsightsData = await getTaskInsights(PROJECT_ID);
+          setTaskInsights(taskInsightsData);
+        } catch (taskError: unknown) {
+          // 501 에러는 무시 (아직 구현되지 않은 API)
+          const axiosError = taskError as { response?: { status?: number } };
+          if (axiosError?.response?.status !== 501) {
+            // 501이 아닌 에러만 처리
+            if (import.meta.env.DEV) {
+              console.error("Task 인사이트 조회 실패:", taskError);
+            }
+          }
+        }
+      } catch (error) {
+        // 에러 처리
+        if (import.meta.env.DEV) {
+          console.error("인사이트 데이터 조회 실패:", error);
+        }
       } finally {
         setLoading(false);
       }
     };
-    fetchTasks();
+    fetchInsights();
   }, []);
 
   const { todayKey, yesterdayKey } = useMemo(() => {
@@ -44,16 +63,34 @@ export default function InsightPage() {
 
   // 지표 계산 및 스냅샷 저장/불러오기
   const { today, yesterday } = useMemo(() => {
-    const m = computeMetrics(tasks);
-    const today = { dateKey: todayKey, ...m };
+    if (!taskInsights) {
+      return {
+        today: {
+          dateKey: todayKey,
+          completionRate: 0,
+          qaDoneCount: 0,
+          lastProgressAt: undefined,
+        },
+        yesterday: null,
+      };
+    }
+
+    const today = {
+      dateKey: todayKey,
+      completionRate: taskInsights.task_completed_probability,
+      qaDoneCount: taskInsights.QA_test,
+      lastProgressAt: taskInsights.task_last_updated,
+    };
+
     // 오늘 스냅샷 저장
     if (!loading) {
       saveDailySnapshot(today);
     }
+
     // 어제 스냅샷 조회
     const y = getSnapshot(yesterdayKey) ?? null;
     return { today, yesterday: y };
-  }, [tasks, loading, todayKey, yesterdayKey]);
+  }, [taskInsights, loading, todayKey, yesterdayKey]);
 
   const completionDelta = diffNumber(
     Number(today.completionRate.toFixed(1)),
@@ -73,6 +110,12 @@ export default function InsightPage() {
         </p>
       </div>
 
+      {/* Project-specific KPI Cards */}
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-black mb-4">
+          프로젝트 상세 지표
+        </h2>
+      </div>
       {/* First row: KPI Cards */}
       <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3 md:items-stretch">
         <KpiCard
