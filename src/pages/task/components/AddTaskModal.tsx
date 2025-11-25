@@ -21,12 +21,14 @@ interface AddTaskModalProps {
     priority: number;
     message: string;
   }) => void;
+  projectId: number;
 }
 
 export default function AddTaskModal({
   isOpen,
   onClose,
   onSubmit,
+  projectId, // eslint-disable-line @typescript-eslint/no-unused-vars
 }: AddTaskModalProps) {
   const [selectedType, setSelectedType] = useState<TaskType>("DEV");
   const [priority, setPriority] = useState<number>(5);

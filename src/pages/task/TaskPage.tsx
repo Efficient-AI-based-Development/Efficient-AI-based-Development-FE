@@ -585,6 +585,7 @@ export default function TaskPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleAddTask}
+        projectId={PROJECT_ID}
       />
 
       {/* 태스크 상세 모달 */}
