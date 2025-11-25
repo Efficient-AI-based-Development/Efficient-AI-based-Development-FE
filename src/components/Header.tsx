@@ -14,7 +14,6 @@ const NAV_ITEMS = [
 const DROPDOWN_ITEMS = [
   { path: "/my-projects", label: "내 프로젝트 관리" },
   { path: "/guide", label: "MCP 연동 가이드" },
-  { path: "/account", label: "계정 설정" },
 ] as const;
 
 // 공통 스타일
@@ -38,10 +37,16 @@ export function Header() {
     return !!token || isLoggedIn === "true";
   };
 
+  // 초기 프로젝트 ID를 localStorage에서 확인
+  const getInitialProjectId = () => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("currentProjectId");
+  };
+
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(getInitialLoginStatus);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
-    null,
+    getInitialProjectId(),
   );
   const [isLoading, setIsLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -60,7 +65,7 @@ export function Header() {
   }, []);
 
   // 선택된 프로젝트 ID 동기화
-  useEffect(() => {
+  const syncProjectId = () => {
     if (typeof window === "undefined") {
       return;
     }
@@ -75,8 +80,34 @@ export function Header() {
       return;
     }
 
+    // URL에 projectId가 없으면 localStorage에서 확인
     const storedProjectId = localStorage.getItem("currentProjectId");
-    setSelectedProjectId(storedProjectId);
+    if (storedProjectId) {
+      setSelectedProjectId(storedProjectId);
+    } else {
+      setSelectedProjectId(null);
+    }
+  };
+
+  useEffect(() => {
+    syncProjectId();
+
+    // localStorage 변경 감지 (다른 탭에서의 변경)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "currentProjectId") {
+        syncProjectId();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+
+    // 주기적으로 체크 (같은 탭에서의 localStorage 변경 감지)
+    const interval = setInterval(syncProjectId, 500);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      clearInterval(interval);
+    };
   }, [location]);
 
   // 외부 클릭 감지하여 드롭다운 닫기
@@ -101,17 +132,36 @@ export function Header() {
 
   const hasSelectedProject = Boolean(selectedProjectId);
 
+  // 프로젝트 관련 페이지 경로
+  const projectPages = ["/task", "/insight", "/project-setting"];
+  const currentPath = location.pathname;
+  const isProjectPage = projectPages.includes(currentPath);
+
+  // 네비게이션 표시 조건: 프로젝트가 선택되어 있고, 현재 프로젝트 관련 페이지에 있을 때
+  const shouldShowNavigation = hasSelectedProject && isProjectPage;
+
   const navigateWithProjectGuard = (path: string) => {
     setIsDropdownOpen(false);
 
-    if (!hasSelectedProject && path !== "/my-projects") {
+    // 프로젝트 선택이 필요 없는 페이지들
+    const publicPages = ["/my-projects", "/guide"];
+
+    // 프로젝트 선택이 필요 없는 페이지는 바로 이동
+    if (publicPages.includes(path)) {
+      router.navigate({ to: path });
+      return;
+    }
+
+    // 프로젝트 관련 페이지는 프로젝트 선택이 필요
+    if (!hasSelectedProject) {
       router.navigate({ to: "/my-projects" });
       return;
     }
 
-    if (path === "/task" && selectedProjectId) {
+    // 프로젝트 관련 페이지들에 projectId 전달
+    if (projectPages.includes(path) && selectedProjectId) {
       router.navigate({
-        to: "/task",
+        to: path,
         search: (prev) => ({
           ...(prev ?? {}),
           projectId: selectedProjectId,
@@ -173,22 +223,28 @@ export function Header() {
         {isLoggedIn ? (
           /* 네비게이션 + 햄버거 메뉴 그룹 (로그인된 경우) */
           <div className="flex items-center gap-6 tablet:gap-12">
-            {/* 중앙 네비게이션 - 프로젝트가 선택된 경우에만 표시 */}
-            {hasSelectedProject && (
+            {/* 중앙 네비게이션 - 프로젝트 관련 페이지에 있을 때만 표시 */}
+            {shouldShowNavigation && (
               <nav className="hidden tablet:flex items-center gap-6 xl:gap-8">
-                {NAV_ITEMS.map((item) => (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      navigateWithProjectGuard(item.path);
-                    }}
-                    className={STYLES.navLink}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
+                {NAV_ITEMS.map((item) => {
+                  const shouldIncludeProjectId =
+                    projectPages.includes(item.path) && selectedProjectId;
+
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      search={
+                        shouldIncludeProjectId
+                          ? { projectId: selectedProjectId }
+                          : undefined
+                      }
+                      className={STYLES.navLink}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
               </nav>
             )}
 
