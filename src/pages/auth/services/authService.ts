@@ -92,31 +92,36 @@ export const authService = {
         hasAccessToken: !!response.data.access_token,
         hasRefreshToken: !!response.data.refresh_token,
         tokenType: response.data.token_type,
+        hasUserInfo: !!response.data.user,
       });
 
-      // 토큰 저장
+      // 백엔드가 쿠키 기반 인증을 사용하므로 토큰은 쿠키에 저장됨
+      // 사용자 정보만 localStorage에 저장 (선택적)
+      if (response.data.user) {
+        localStorage.setItem("userInfo", JSON.stringify(response.data.user));
+        console.log(
+          "✅ [authService] 사용자 정보 저장 완료:",
+          response.data.user,
+        );
+      }
+
+      // 토큰이 응답에 포함된 경우에만 localStorage에 저장 (하위 호환성)
+      // 백엔드가 쿠키만 사용하는 경우 이 부분은 실행되지 않음
       if (response.data.access_token) {
         localStorage.setItem("token", response.data.access_token);
         localStorage.setItem("accessToken", response.data.access_token);
-        console.log("✅ [authService] 토큰 저장 완료:", {
+        console.log("✅ [authService] 토큰 저장 완료 (하위 호환성):", {
           tokenLength: response.data.access_token.length,
           tokenPreview: `${response.data.access_token.substring(0, 20)}...`,
         });
       } else {
-        console.warn("⚠️ [authService] access_token이 응답에 없습니다.");
+        console.log(
+          "ℹ️ [authService] 토큰이 응답에 없습니다. 쿠키 기반 인증을 사용합니다.",
+        );
       }
       if (response.data.refresh_token) {
         localStorage.setItem("refreshToken", response.data.refresh_token);
         console.log("✅ [authService] refreshToken 저장 완료");
-      }
-
-      // 저장 확인
-      const savedToken = localStorage.getItem("token");
-      const savedAccessToken = localStorage.getItem("accessToken");
-      if (!savedToken || !savedAccessToken) {
-        console.error(
-          "❌ [authService] 토큰 저장 실패 - localStorage 확인 필요",
-        );
       }
 
       return response.data;
