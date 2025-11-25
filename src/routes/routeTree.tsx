@@ -140,6 +140,13 @@ const taskRoute = createRoute({
 const insightRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/insight",
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): {
+    projectId?: string;
+  } => ({
+    projectId: search.projectId ? String(search.projectId) : undefined,
+  }),
   component: () => (
     <Suspense fallback={<div className="p-6"> 로딩중...</div>}>
       <InsightPage />
