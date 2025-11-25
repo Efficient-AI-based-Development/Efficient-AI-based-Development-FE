@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Link, useRouter } from "@tanstack/react-router";
+import { Link, useRouter, useRouterState } from "@tanstack/react-router";
 import { Menu, X } from "lucide-react";
 import { authService } from "@/pages/auth/services/authService";
 
@@ -40,11 +40,17 @@ export function Header() {
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(getInitialLoginStatus);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const location = useRouterState({
+    select: (state) => state.location,
+  });
 
-  // 로그인 상태 확인 함수 (한 번만 체크)
+  // 로그인 상태 확인 (한 번만 체크)
   useEffect(() => {
     const token =
       localStorage.getItem("token") || localStorage.getItem("accessToken");
@@ -52,6 +58,26 @@ export function Header() {
     const loggedIn = !!token || isLoggedInValue === "true";
     setIsLoggedIn(loggedIn);
   }, []);
+
+  // 선택된 프로젝트 ID 동기화
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const searchProjectId =
+      (location.search as { projectId?: string } | undefined)?.projectId ??
+      null;
+
+    if (searchProjectId) {
+      localStorage.setItem("currentProjectId", searchProjectId);
+      setSelectedProjectId(searchProjectId);
+      return;
+    }
+
+    const storedProjectId = localStorage.getItem("currentProjectId");
+    setSelectedProjectId(storedProjectId);
+  }, [location]);
 
   // 외부 클릭 감지하여 드롭다운 닫기
   useEffect(() => {
@@ -73,8 +99,27 @@ export function Header() {
     };
   }, [isDropdownOpen]);
 
-  const handleDropdownItemClick = (path: string) => {
+  const hasSelectedProject = Boolean(selectedProjectId);
+
+  const navigateWithProjectGuard = (path: string) => {
     setIsDropdownOpen(false);
+
+    if (!hasSelectedProject && path !== "/my-projects") {
+      router.navigate({ to: "/my-projects" });
+      return;
+    }
+
+    if (path === "/task" && selectedProjectId) {
+      router.navigate({
+        to: "/task",
+        search: (prev) => ({
+          ...(prev ?? {}),
+          projectId: selectedProjectId,
+        }),
+      });
+      return;
+    }
+
     router.navigate({ to: path });
   };
 
@@ -83,6 +128,7 @@ export function Header() {
     try {
       await authService.logout();
       setIsLoggedIn(false);
+      localStorage.removeItem("currentProjectId");
       router.navigate({ to: "/" });
     } catch (error) {
       console.error("로그아웃 실패:", error);
@@ -127,16 +173,26 @@ export function Header() {
         {isLoggedIn ? (
           /* 네비게이션 + 햄버거 메뉴 그룹 (로그인된 경우) */
           <div className="flex items-center gap-6 tablet:gap-12">
-            {/* 중앙 네비게이션 - 812px 이상에서만 표시 */}
-            <nav className="hidden tablet:flex items-center gap-6 xl:gap-8">
-              {NAV_ITEMS.map((item) => (
-                <Link key={item.path} to={item.path} className={STYLES.navLink}>
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
+            {/* 중앙 네비게이션 - 프로젝트가 선택된 경우에만 표시 */}
+            {hasSelectedProject && (
+              <nav className="hidden tablet:flex items-center gap-6 xl:gap-8">
+                {NAV_ITEMS.map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      navigateWithProjectGuard(item.path);
+                    }}
+                    className={STYLES.navLink}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
+            )}
 
-            {/* 햄버거 메뉴 */}
+            {/* 햄버거 메뉴 (항상 표시) */}
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -152,7 +208,7 @@ export function Header() {
                   {DROPDOWN_ITEMS.map((item) => (
                     <button
                       key={item.path}
-                      onClick={() => handleDropdownItemClick(item.path)}
+                      onClick={() => navigateWithProjectGuard(item.path)}
                       className={STYLES.dropdownItem}
                     >
                       {item.label}
@@ -262,25 +318,6 @@ export function Header() {
             </button>
           </div>
 
-          {/* 메인 네비게이션 */}
-          <nav className="p-4">
-            <div className="mb-2 px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              프로젝트 메뉴
-            </div>
-            {NAV_ITEMS.map((item) => (
-              <button
-                key={item.path}
-                onClick={() => handleDropdownItemClick(item.path)}
-                className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-900 transition-colors"
-              >
-                {item.label}
-              </button>
-            ))}
-          </nav>
-
-          {/* 구분선 */}
-          <div className="border-t border-gray-200 mx-4"></div>
-
           {/* 설정 메뉴 */}
           <div className="p-4">
             <div className="mb-2 px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -289,7 +326,7 @@ export function Header() {
             {DROPDOWN_ITEMS.map((item) => (
               <button
                 key={item.path}
-                onClick={() => handleDropdownItemClick(item.path)}
+                onClick={() => navigateWithProjectGuard(item.path)}
                 className="w-full text-left px-4 py-2.5 hover:bg-gray-100 rounded-lg text-gray-700 transition-colors"
               >
                 {item.label}

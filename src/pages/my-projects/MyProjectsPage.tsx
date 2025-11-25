@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "@tanstack/react-router";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +16,46 @@ import {
   RefreshCw,
   Search,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+const MOCK_PROJECTS: Project[] = [
+  {
+    id: 1,
+    project_idx: "DEMO-001",
+    title: "샘플 프로젝트 A",
+    status: "in_progress",
+    owner_id: "demo",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 2,
+    project_idx: "DEMO-002",
+    title: "샘플 프로젝트 B",
+    status: "not_started",
+    owner_id: "demo",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 3,
+    project_idx: "DEMO-003",
+    title: "샘플 프로젝트 C",
+    status: "completed",
+    owner_id: "demo",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+];
+
+const buildMockResponse = (): ListProjectsResponse => ({
+  projects: MOCK_PROJECTS,
+  meta: {
+    page: 1,
+    page_size: MOCK_PROJECTS.length,
+    total: MOCK_PROJECTS.length,
+  },
+});
 
 export default function MyProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -28,9 +68,19 @@ export default function MyProjectsPage() {
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [authError, setAuthError] = useState<
+    "missing-token" | "api-error" | null
+  >(null);
   const router = useRouter();
   const { toast } = useToast();
   const PAGE_SIZE = 9;
+  const devModeEnabled = useMemo(
+    () =>
+      typeof window !== "undefined"
+        ? localStorage.getItem("devMode") === "true"
+        : false,
+    [],
+  );
 
   // 검색어 디바운스
   useEffect(() => {
@@ -50,6 +100,35 @@ export default function MyProjectsPage() {
     const fetchProjects = async () => {
       try {
         setIsLoading(true);
+        setAuthError(null);
+
+        const token =
+          typeof window !== "undefined"
+            ? localStorage.getItem("token") ||
+              localStorage.getItem("accessToken")
+            : null;
+
+        // 토큰이 없고 devMode도 아니라면 로그인 유도
+        if (!token && !devModeEnabled) {
+          setProjects([]);
+          setMeta((prev) => ({
+            ...prev,
+            total: 0,
+            page,
+            page_size: PAGE_SIZE,
+          }));
+          setAuthError("missing-token");
+          return;
+        }
+
+        // devMode에서 토큰 없이 진입하면 목업 데이터 사용
+        if (!token && devModeEnabled) {
+          const mockResponse = buildMockResponse();
+          setProjects(mockResponse.projects);
+          setMeta(mockResponse.meta);
+          return;
+        }
+
         const response = await listProjects({
           q: debouncedSearch || undefined,
           page,
@@ -63,6 +142,23 @@ export default function MyProjectsPage() {
         setPage(response.meta.page);
       } catch (error) {
         console.error("[MyProjectsPage] 프로젝트 목록 조회 실패:", error);
+
+        const axiosError = error as {
+          response?: { status?: number };
+        };
+
+        if (
+          (axiosError.response?.status === 401 ||
+            axiosError.response?.status === 403) &&
+          devModeEnabled
+        ) {
+          const mockResponse = buildMockResponse();
+          setProjects(mockResponse.projects);
+          setMeta(mockResponse.meta);
+        } else {
+          setAuthError("api-error");
+        }
+
         toast({
           title: "프로젝트 목록을 불러오는데 실패했습니다.",
           variant: "destructive",
@@ -82,6 +178,7 @@ export default function MyProjectsPage() {
 
   // 프로젝트 클릭 핸들러
   const handleProjectClick = (projectId: number) => {
+    localStorage.setItem("currentProjectId", String(projectId));
     router.navigate({
       to: "/task",
       search: (prev) => ({
@@ -162,6 +259,33 @@ export default function MyProjectsPage() {
     );
   }
 
+  if (authError === "missing-token") {
+    return (
+      <div className="min-h-screen bg-gray-50 p-8 flex flex-col items-center justify-center gap-6 text-center">
+        <h1 className="text-3xl font-bold text-gray-900">
+          로그인이 필요합니다
+        </h1>
+        <p className="text-gray-600 max-w-md">
+          프로젝트 목록을 확인하려면 구글 로그인을 완료해주세요. 로그인 후
+          자동으로 프로젝트 정보를 불러옵니다.
+        </p>
+        <div className="flex gap-3">
+          <Button onClick={() => router.navigate({ to: "/login" })}>
+            로그인 페이지로 이동
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => router.navigate({ to: "/document/setting1" })}
+          >
+            프로젝트 생성 가이드 보기
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const showFallbackNotice = authError === "api-error";
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       {/* 헤더 + 검색 */}
@@ -183,6 +307,13 @@ export default function MyProjectsPage() {
           />
         </div>
       </div>
+
+      {showFallbackNotice && (
+        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-6 py-4 text-sm text-amber-900">
+          서버 인증 정보가 없어 목업 데이터를 대신 표시하고 있습니다. 실제
+          데이터를 확인하려면 로그인 후 다시 시도해주세요.
+        </div>
+      )}
 
       {/* 프로젝트 목록 */}
       {projects.length === 0 ? (
