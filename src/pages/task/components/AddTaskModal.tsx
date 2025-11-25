@@ -127,34 +127,30 @@ export default function AddTaskModal({
   const handleSend = async () => {
     if (!inputValue.trim() || isSending) return;
 
-    // 토큰 확인
+    // 토큰 확인 (백엔드가 쿠키 기반 인증을 사용할 수도 있으므로 토큰이 없어도 시도)
     const token =
       localStorage.getItem("token") || localStorage.getItem("accessToken");
     const devMode = localStorage.getItem("devMode") === "true";
     const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
 
-    // 토큰이 없고 로그인 상태로 표시되어 있는 경우
-    if (!token && isLoggedIn) {
-      console.warn(
-        "[AddTaskModal] isLoggedIn은 true이지만 토큰이 없습니다. 로그인 플로우를 다시 진행해주세요.",
-      );
+    // 토큰이 없고 로그인도 안 된 경우에만 에러 표시
+    // 백엔드가 쿠키 기반 인증을 사용하는 경우 토큰 없이도 작동할 수 있음
+    if (!token && !isLoggedIn && !devMode) {
       const errorMessage = {
         role: "assistant" as const,
         content:
-          "로그인 상태이지만 인증 토큰이 없습니다.\n\n**해결 방법:**\n\n**방법 1: 브라우저 콘솔에서 수동 설정**\n```javascript\nlocalStorage.setItem('token', '여기에_실제_토큰_입력');\nlocalStorage.setItem('accessToken', '여기에_실제_토큰_입력');\n```\n\n**방법 2: 로그인 페이지에서 다시 로그인**\n로그인 페이지로 이동하여 구글 로그인을 다시 진행하세요.\n\n**방법 3: 개발 모드에서 테스트용 토큰**\n실제 백엔드에서 받은 토큰을 위 코드로 설정하세요.",
+          "인증이 필요합니다. 로그인 후 다시 시도해주세요.\n\n백엔드가 쿠키 기반 인증을 사용하는 경우, 로그인 후 쿠키가 자동으로 전송됩니다.",
       };
       setMessages((prev) => [...prev, errorMessage]);
       return;
     }
 
-    if (!token && !devMode) {
-      const errorMessage = {
-        role: "assistant" as const,
-        content:
-          "인증 토큰이 필요합니다. 로그인 후 다시 시도해주세요.\n\n개발 모드에서는 localStorage에 'token' 또는 'accessToken' 키가 필요합니다.",
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-      return;
+    // 토큰이 없지만 로그인 상태인 경우 경고만 표시하고 계속 진행
+    // (백엔드가 쿠키 기반 인증을 사용할 수 있으므로)
+    if (!token && isLoggedIn) {
+      console.warn(
+        "[AddTaskModal] isLoggedIn은 true이지만 토큰이 없습니다. 쿠키 기반 인증을 사용할 수 있습니다.",
+      );
     }
 
     setIsSending(true);
