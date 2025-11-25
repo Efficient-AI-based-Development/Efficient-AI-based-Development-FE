@@ -141,7 +141,7 @@ export default function AddTaskModal({
       const errorMessage = {
         role: "assistant" as const,
         content:
-          "로그인 상태이지만 인증 토큰이 없습니다.\n\n다음 중 하나를 시도해주세요:\n1. 로그인 페이지에서 다시 로그인하기\n2. 브라우저 콘솔에서 localStorage 확인하기\n3. 개발 모드라면 수동으로 토큰 설정하기",
+          "로그인 상태이지만 인증 토큰이 없습니다.\n\n**해결 방법:**\n\n**방법 1: 브라우저 콘솔에서 수동 설정**\n```javascript\nlocalStorage.setItem('token', '여기에_실제_토큰_입력');\nlocalStorage.setItem('accessToken', '여기에_실제_토큰_입력');\n```\n\n**방법 2: 로그인 페이지에서 다시 로그인**\n로그인 페이지로 이동하여 구글 로그인을 다시 진행하세요.\n\n**방법 3: 개발 모드에서 테스트용 토큰**\n실제 백엔드에서 받은 토큰을 위 코드로 설정하세요.",
       };
       setMessages((prev) => [...prev, errorMessage]);
       return;
