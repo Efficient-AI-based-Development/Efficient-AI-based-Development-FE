@@ -34,6 +34,10 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
       console.log("[API Client] 인증 토큰 추가됨");
+    } else {
+      console.warn(
+        "[API Client] 토큰이 없습니다. localStorage에 'token' 또는 'accessToken' 키를 확인하세요.",
+      );
     }
     return config;
   },

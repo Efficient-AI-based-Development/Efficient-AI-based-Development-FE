@@ -218,15 +218,27 @@ export default function AddTaskModal({
       console.error("메시지 전송 실패:", error);
 
       // 에러 타입에 따라 다른 메시지 표시
-      const axiosError = error as { response?: { status?: number } };
+      const axiosError = error as {
+        response?: { status?: number; data?: { detail?: string } };
+        message?: string;
+      };
       let errorContent =
         "죄송합니다. 일시적인 오류가 발생했습니다. 다시 시도해주세요.";
 
-      if (
-        axiosError.response?.status === 403 ||
-        axiosError.response?.status === 401
-      ) {
-        errorContent = "인증이 필요합니다. 로그인 페이지로 이동합니다.";
+      if (axiosError.response?.status === 403) {
+        const detail = axiosError.response?.data?.detail;
+        if (detail === "Not authenticated") {
+          errorContent =
+            "인증이 필요합니다. 페이지를 새로고침하거나 다시 로그인해주세요.";
+        } else {
+          errorContent =
+            "권한이 없습니다. 프로젝트에 대한 접근 권한을 확인해주세요.";
+        }
+      } else if (axiosError.response?.status === 401) {
+        errorContent =
+          "인증 토큰이 만료되었습니다. 페이지를 새로고침하거나 다시 로그인해주세요.";
+      } else if (axiosError.message) {
+        errorContent = `오류가 발생했습니다: ${axiosError.message}`;
       }
 
       // 에러 처리
