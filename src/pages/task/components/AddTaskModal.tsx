@@ -127,6 +127,21 @@ export default function AddTaskModal({
   const handleSend = async () => {
     if (!inputValue.trim() || isSending) return;
 
+    // 토큰 확인
+    const token =
+      localStorage.getItem("token") || localStorage.getItem("accessToken");
+    const devMode = localStorage.getItem("devMode") === "true";
+
+    if (!token && !devMode) {
+      const errorMessage = {
+        role: "assistant" as const,
+        content:
+          "인증 토큰이 필요합니다. 로그인 후 다시 시도해주세요.\n\n개발 모드에서는 localStorage에 'token' 또는 'accessToken' 키가 필요합니다.",
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+      return;
+    }
+
     setIsSending(true);
 
     // 사용자 메시지 추가
@@ -222,14 +237,23 @@ export default function AddTaskModal({
         response?: { status?: number; data?: { detail?: string } };
         message?: string;
       };
+      const devMode = localStorage.getItem("devMode") === "true";
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("accessToken");
+
       let errorContent =
         "죄송합니다. 일시적인 오류가 발생했습니다. 다시 시도해주세요.";
 
       if (axiosError.response?.status === 403) {
         const detail = axiosError.response?.data?.detail;
-        if (detail === "Not authenticated") {
-          errorContent =
-            "인증이 필요합니다. 페이지를 새로고침하거나 다시 로그인해주세요.";
+        if (detail === "Not authenticated" || !token) {
+          if (devMode) {
+            errorContent =
+              "개발 모드에서 인증 토큰이 필요합니다.\n\nlocalStorage에 'token' 또는 'accessToken' 키를 추가해주세요.\n또는 실제 로그인을 통해 토큰을 받아주세요.";
+          } else {
+            errorContent =
+              "인증이 필요합니다. 페이지를 새로고침하거나 다시 로그인해주세요.";
+          }
         } else {
           errorContent =
             "권한이 없습니다. 프로젝트에 대한 접근 권한을 확인해주세요.";
