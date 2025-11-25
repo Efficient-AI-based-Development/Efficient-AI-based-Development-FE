@@ -63,17 +63,21 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 || error.response?.status === 403) {
       const refreshToken = localStorage.getItem("refreshToken");
       const originalRequest = error.config;
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("accessToken");
 
-      // 401 에러이고 refreshToken이 있으면 토큰 갱신 시도
+      // 401 또는 403 에러이고 refreshToken이 있으면 토큰 갱신 시도
       if (
-        error.response?.status === 401 &&
+        (error.response?.status === 401 || error.response?.status === 403) &&
         refreshToken &&
         !originalRequest._retry
       ) {
         originalRequest._retry = true;
 
         try {
-          console.log("[API Client] 401 에러 발생, 토큰 갱신 시도");
+          console.log(
+            `[API Client] ${error.response?.status} 에러 발생, 토큰 갱신 시도`,
+          );
           const { authService } = await import(
             "@/pages/auth/services/authService"
           );
@@ -83,7 +87,7 @@ apiClient.interceptors.response.use(
           return apiClient(originalRequest);
         } catch (refreshError) {
           console.error("[API Client] 토큰 갱신 실패:", refreshError);
-          // 토큰 갱신 실패 시 로그아웃 처리
+          // 토큰 갱신 실패 시에만 로그아웃 처리
           localStorage.removeItem("token");
           localStorage.removeItem("accessToken");
           localStorage.removeItem("refreshToken");
@@ -93,24 +97,25 @@ apiClient.interceptors.response.use(
           }
           return Promise.reject(refreshError);
         }
-      } else {
-        // 403 에러이거나 refreshToken이 없는 경우 로그인 페이지로 리다이렉트
+      } else if (!token) {
+        // 토큰이 전혀 없는 경우에만 로그인 페이지로 리다이렉트
         console.error(
-          `[API Client] ${error.response?.status} 에러 발생, 인증 필요`,
+          `[API Client] ${error.response?.status} 에러 발생, 토큰 없음`,
         );
-        const token =
-          localStorage.getItem("token") || localStorage.getItem("accessToken");
-
-        // 토큰이 없거나 403 에러인 경우 로그인 페이지로 리다이렉트
-        if (!token || error.response?.status === 403) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("accessToken");
-          localStorage.removeItem("refreshToken");
-          // 로그인 페이지로 리다이렉트
-          if (window.location.pathname !== "/login") {
-            window.location.href = "/login";
-          }
+        localStorage.removeItem("token");
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        // 로그인 페이지로 리다이렉트
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
         }
+        return Promise.reject(error);
+      } else {
+        // 토큰은 있지만 403 에러인 경우 권한 문제일 수 있음
+        // 리다이렉트하지 않고 에러만 반환
+        console.error(
+          `[API Client] ${error.response?.status} 에러 발생, 권한 문제일 수 있음`,
+        );
         return Promise.reject(error);
       }
     }
