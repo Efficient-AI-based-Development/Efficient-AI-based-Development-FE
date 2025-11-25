@@ -9,9 +9,14 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  test: {
-    environment: "jsdom",
-    setupFiles: "./src/test/setup.ts",
-    coverage: { reporter: ["text", "html"] },
+  server: {
+    proxy: {
+      "/api": {
+        target: "http://34.61.144.150:8000",
+        changeOrigin: true,
+        secure: false,
+      }
+    }
   },
-});
+})
+  

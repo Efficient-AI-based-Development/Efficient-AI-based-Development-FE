@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useRouter, useSearch } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
 import TaskHeader from "./components/TaskHeader";
 import TaskBoard from "./components/TaskBoard";
 import AddTaskModal from "./components/AddTaskModal";
@@ -20,9 +22,18 @@ export default function TaskPage() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const router = useRouter();
+  const search = useSearch({ from: "/task" });
+
+  const DEFAULT_PROJECT_ID = 1;
+  const parsedProjectId = search.projectId
+    ? Number(search.projectId)
+    : DEFAULT_PROJECT_ID;
 
   // 프로젝트 정보
-  const PROJECT_ID = 1; // TODO: 실제 프로젝트 ID로 변경 필요
+  const PROJECT_ID = Number.isNaN(parsedProjectId)
+    ? DEFAULT_PROJECT_ID
+    : parsedProjectId;
 
   // 태스크 목록 불러오기
   useEffect(() => {
@@ -46,19 +57,14 @@ export default function TaskPage() {
     };
 
     fetchTasks();
-  }, []);
+  }, [PROJECT_ID]);
 
   // URL 쿼리로 진입 시 추가 모달 자동 오픈 (?new=1)
   useEffect(() => {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("new")) {
-        setIsModalOpen(true);
-      }
-    } catch {
-      // window 사용 불가 환경은 무시
+    if (search.new) {
+      setIsModalOpen(true);
     }
-  }, []);
+  }, [search.new]);
 
   // 태스크 상태 업데이트
   const handleTaskUpdate = async (
@@ -549,11 +555,17 @@ export default function TaskPage() {
 
   return (
     <div className="min-h-screen p-8">
-      {/* 제목 */}
-      <div className="mb-6">
+      {/* 제목 + MCP 연동 버튼 */}
+      <div className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-bold text-customBlack">
           종합설계프로젝트 1팀 의 대시보드
         </h1>
+        <Button
+          className="bg-black hover:bg-gray-800 text-white rounded-lg px-6 py-2"
+          onClick={() => router.navigate({ to: "/mcp" })}
+        >
+          MCP 연동
+        </Button>
       </div>
 
       {/* 검색바 + 통계 + 컬럼 테두리 박스 */}

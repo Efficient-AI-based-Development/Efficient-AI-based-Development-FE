@@ -9,10 +9,13 @@ import { RootLayout, NotFound } from "./root";
 const HomePage = lazy(() => import("@/pages/home/HomePage"));
 const DocumentPage = lazy(() => import("@/pages/document/DocumentPage"));
 const ConfirmPage = lazy(() => import("@/pages/document/confirm/SettingPage1"));
-const SettingPage2 = lazy(() => import("@/pages/document/confirm/SettingPage2"));
-const SettingPage3 = lazy(() => import("@/pages/document/confirm/SettingPage3"));
+const SettingPage2 = lazy(
+  () => import("@/pages/document/confirm/SettingPage2"),
+);
+const SettingPage3 = lazy(
+  () => import("@/pages/document/confirm/SettingPage3"),
+);
 const CheckPage = lazy(() => import("@/pages/document/confirm/CheckPage"));
-const ChatPage = lazy(() => import("@/pages/document/chat/ChatPage"));
 const TaskPage = lazy(() => import("@/pages/task/TaskPage"));
 const InsightPage = lazy(() => import("@/pages/insight/InsightPage"));
 
@@ -23,7 +26,7 @@ const MyProjectsPage = lazy(() => import("@/pages/my-projects/MyProjectsPage"));
 const McpPage = lazy(() => import("@/pages/mcp/McpPage"));
 const GuidePage = lazy(() => import("@/pages/guide/GuidePage"));
 const AccountPage = lazy(() => import("@/pages/account/AccountPage"));
-
+const LoginPage = lazy(() => import("@/pages/auth/LoginPage"));
 
 const rootRoute = createRootRoute({
   component: RootLayout,
@@ -53,7 +56,9 @@ const documentRoute = createRoute({
 const documentSetting1Route = createRoute({
   getParentRoute: () => rootRoute,
   path: "/document/setting1",
-  validateSearch: (search: Record<string, unknown>): {
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): {
     initialMessage?: string;
   } => ({
     initialMessage: search.initialMessage
@@ -70,7 +75,9 @@ const documentSetting1Route = createRoute({
 const documentSetting2Route = createRoute({
   getParentRoute: () => rootRoute,
   path: "/document/setting2",
-  validateSearch: (search: Record<string, unknown>): {
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): {
     projectName?: string;
     mainColor?: string;
     pageCount?: string;
@@ -112,22 +119,18 @@ const documentCheckRoute = createRoute({
   ),
 });
 
-const documentChatRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/document/chat",
-  validateSearch: (search: Record<string, unknown>) => ({
-    initialMessage: (search.initialMessage as string) || undefined,
-  }),
-  component: () => (
-    <Suspense fallback={<div className="p-6"> 로딩중...</div>}>
-      <ChatPage />
-    </Suspense>
-  ),
-});
-
 const taskRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/task",
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): {
+    projectId?: string;
+    new?: string;
+  } => ({
+    projectId: search.projectId ? String(search.projectId) : undefined,
+    new: search.new ? String(search.new) : undefined,
+  }),
   component: () => (
     <Suspense fallback={<div className="p-6"> 로딩중...</div>}>
       <TaskPage />
@@ -141,7 +144,6 @@ const insightRoute = createRoute({
   component: () => (
     <Suspense fallback={<div className="p-6"> 로딩중...</div>}>
       <InsightPage />
-
     </Suspense>
   ),
 });
@@ -192,7 +194,16 @@ const accountRoute = createRoute({
   component: () => (
     <Suspense fallback={<div className="p-6"> 로딩중...</div>}>
       <AccountPage />
+    </Suspense>
+  ),
+});
 
+const loginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/login",
+  component: () => (
+    <Suspense fallback={<div className="p-6"> 로딩중...</div>}>
+      <LoginPage />
     </Suspense>
   ),
 });
@@ -204,7 +215,6 @@ export const routeTree = rootRoute.addChildren([
   documentSetting2Route,
   documentSetting3Route,
   documentCheckRoute,
-  documentChatRoute,
   taskRoute,
   insightRoute,
   projectSettingRoute,
@@ -212,6 +222,7 @@ export const routeTree = rootRoute.addChildren([
   mcpRoute,
   guideRoute,
   accountRoute,
+  loginRoute,
 ]);
 export const router = createRouter({ routeTree });
 
