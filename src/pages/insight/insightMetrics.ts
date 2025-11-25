@@ -127,7 +127,8 @@ export function formatDOffset(lastProgressAt?: string): string {
 
   const msPerDay = 24 * 60 * 60 * 1000;
   const diffDays = Math.floor((today.getTime() - last.getTime()) / msPerDay);
-  if (diffDays <= 0) return "D-Day";
+  if (diffDays === 0) return "TODAY";
+  if (diffDays < 0) return "D-Day";
   return `D+${diffDays}`;
 }
 
