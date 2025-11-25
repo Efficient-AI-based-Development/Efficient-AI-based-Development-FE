@@ -216,10 +216,23 @@ export default function AddTaskModal({
       );
     } catch (error) {
       console.error("메시지 전송 실패:", error);
+
+      // 에러 타입에 따라 다른 메시지 표시
+      const axiosError = error as { response?: { status?: number } };
+      let errorContent =
+        "죄송합니다. 일시적인 오류가 발생했습니다. 다시 시도해주세요.";
+
+      if (
+        axiosError.response?.status === 403 ||
+        axiosError.response?.status === 401
+      ) {
+        errorContent = "인증이 필요합니다. 로그인 페이지로 이동합니다.";
+      }
+
       // 에러 처리
       const errorMessage = {
         role: "assistant" as const,
-        content: "죄송합니다. 일시적인 오류가 발생했습니다. 다시 시도해주세요.",
+        content: errorContent,
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
@@ -335,9 +348,22 @@ export default function AddTaskModal({
       );
     } catch (error) {
       console.error("메시지 전송 실패:", error);
+
+      // 에러 타입에 따라 다른 메시지 표시
+      const axiosError = error as { response?: { status?: number } };
+      let errorContent =
+        "죄송합니다. 일시적인 오류가 발생했습니다. 다시 시도해주세요.";
+
+      if (
+        axiosError.response?.status === 403 ||
+        axiosError.response?.status === 401
+      ) {
+        errorContent = "인증이 필요합니다. 로그인 페이지로 이동합니다.";
+      }
+
       const errorMessage = {
         role: "assistant" as const,
-        content: "죄송합니다. 일시적인 오류가 발생했습니다. 다시 시도해주세요.",
+        content: errorContent,
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {

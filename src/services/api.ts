@@ -30,7 +30,6 @@ apiClient.interceptors.request.use(
     }
     // 인증 토큰 추가
     const token =
-
       localStorage.getItem("token") || localStorage.getItem("accessToken");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -59,21 +58,27 @@ apiClient.interceptors.response.use(
   },
   async (error) => {
     console.error("[API Client] 응답 인터셉터 - 에러");
-    
-    // 401 에러인 경우 토큰 갱신 시도
-    if (error.response?.status === 401) {
+
+    // 401 또는 403 에러인 경우 인증 문제 처리
+    if (error.response?.status === 401 || error.response?.status === 403) {
       const refreshToken = localStorage.getItem("refreshToken");
       const originalRequest = error.config;
 
-      // 토큰 갱신 시도 (무한 루프 방지)
-      if (refreshToken && !originalRequest._retry) {
+      // 401 에러이고 refreshToken이 있으면 토큰 갱신 시도
+      if (
+        error.response?.status === 401 &&
+        refreshToken &&
+        !originalRequest._retry
+      ) {
         originalRequest._retry = true;
 
         try {
           console.log("[API Client] 401 에러 발생, 토큰 갱신 시도");
-          const { authService } = await import("@/pages/auth/services/authService");
+          const { authService } = await import(
+            "@/pages/auth/services/authService"
+          );
           await authService.refreshToken();
-          
+
           // 원래 요청 재시도
           return apiClient(originalRequest);
         } catch (refreshError) {
@@ -88,6 +93,25 @@ apiClient.interceptors.response.use(
           }
           return Promise.reject(refreshError);
         }
+      } else {
+        // 403 에러이거나 refreshToken이 없는 경우 로그인 페이지로 리다이렉트
+        console.error(
+          `[API Client] ${error.response?.status} 에러 발생, 인증 필요`,
+        );
+        const token =
+          localStorage.getItem("token") || localStorage.getItem("accessToken");
+
+        // 토큰이 없거나 403 에러인 경우 로그인 페이지로 리다이렉트
+        if (!token || error.response?.status === 403) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+          // 로그인 페이지로 리다이렉트
+          if (window.location.pathname !== "/login") {
+            window.location.href = "/login";
+          }
+        }
+        return Promise.reject(error);
       }
     }
 
