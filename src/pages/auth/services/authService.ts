@@ -51,7 +51,7 @@ export const authService = {
 
       const googleAuthUrl = response.data.url;
       console.log("✅ [authService] 구글 OAuth URL 받음:", googleAuthUrl);
-      
+
       // 브라우저에서 구글 로그인 페이지로 리다이렉트
       if (googleAuthUrl && googleAuthUrl.startsWith("http")) {
         window.location.href = googleAuthUrl;
@@ -98,9 +98,25 @@ export const authService = {
       if (response.data.access_token) {
         localStorage.setItem("token", response.data.access_token);
         localStorage.setItem("accessToken", response.data.access_token);
+        console.log("✅ [authService] 토큰 저장 완료:", {
+          tokenLength: response.data.access_token.length,
+          tokenPreview: `${response.data.access_token.substring(0, 20)}...`,
+        });
+      } else {
+        console.warn("⚠️ [authService] access_token이 응답에 없습니다.");
       }
       if (response.data.refresh_token) {
         localStorage.setItem("refreshToken", response.data.refresh_token);
+        console.log("✅ [authService] refreshToken 저장 완료");
+      }
+
+      // 저장 확인
+      const savedToken = localStorage.getItem("token");
+      const savedAccessToken = localStorage.getItem("accessToken");
+      if (!savedToken || !savedAccessToken) {
+        console.error(
+          "❌ [authService] 토큰 저장 실패 - localStorage 확인 필요",
+        );
       }
 
       return response.data;
@@ -140,7 +156,7 @@ export const authService = {
 
     try {
       const refreshToken = localStorage.getItem("refreshToken");
-      
+
       if (!refreshToken) {
         throw new Error("Refresh token이 없습니다.");
       }
@@ -195,4 +211,3 @@ export const authService = {
     }
   },
 };
-

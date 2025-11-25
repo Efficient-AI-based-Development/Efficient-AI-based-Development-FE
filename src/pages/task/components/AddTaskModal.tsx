@@ -131,6 +131,21 @@ export default function AddTaskModal({
     const token =
       localStorage.getItem("token") || localStorage.getItem("accessToken");
     const devMode = localStorage.getItem("devMode") === "true";
+    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+
+    // 토큰이 없고 로그인 상태로 표시되어 있는 경우
+    if (!token && isLoggedIn) {
+      console.warn(
+        "[AddTaskModal] isLoggedIn은 true이지만 토큰이 없습니다. 로그인 플로우를 다시 진행해주세요.",
+      );
+      const errorMessage = {
+        role: "assistant" as const,
+        content:
+          "로그인 상태이지만 인증 토큰이 없습니다.\n\n다음 중 하나를 시도해주세요:\n1. 로그인 페이지에서 다시 로그인하기\n2. 브라우저 콘솔에서 localStorage 확인하기\n3. 개발 모드라면 수동으로 토큰 설정하기",
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+      return;
+    }
 
     if (!token && !devMode) {
       const errorMessage = {
