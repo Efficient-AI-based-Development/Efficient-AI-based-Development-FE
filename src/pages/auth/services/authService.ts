@@ -88,12 +88,37 @@ export const authService = {
       const url = `/api/v1/auth/login/google/callback?code=${encodeURIComponent(code)}`;
       const response = await apiClient.get<TokenResponse>(url);
 
+      // 응답 전체 로그 출력 (토큰 확인용)
+      console.log("🔍 [authService] 백엔드 응답 전체:", response.data);
+      console.log("🔍 [authService] 응답 데이터 타입:", typeof response.data);
+      console.log(
+        "🔍 [authService] 응답 데이터 키:",
+        Object.keys(response.data || {}),
+      );
+
       console.log("✅ [authService] 구글 로그인 콜백 성공:", {
         hasAccessToken: !!response.data.access_token,
         hasRefreshToken: !!response.data.refresh_token,
         tokenType: response.data.token_type,
         hasUserInfo: !!response.data.user,
+        accessTokenLength: response.data.access_token?.length || 0,
+        refreshTokenLength: response.data.refresh_token?.length || 0,
       });
+
+      // 토큰이 실제로 있는지 상세 확인
+      if (response.data.access_token) {
+        console.log("✅ [authService] access_token 발견!");
+        console.log(
+          "🔍 [authService] access_token 미리보기:",
+          `${response.data.access_token.substring(0, 50)}...`,
+        );
+      } else {
+        console.warn("⚠️ [authService] access_token이 응답에 없습니다!");
+        console.warn(
+          "⚠️ [authService] 응답 데이터:",
+          JSON.stringify(response.data, null, 2),
+        );
+      }
 
       // 백엔드가 쿠키 기반 인증을 사용하므로 토큰은 쿠키에 저장됨
       // 사용자 정보만 localStorage에 저장 (선택적)
