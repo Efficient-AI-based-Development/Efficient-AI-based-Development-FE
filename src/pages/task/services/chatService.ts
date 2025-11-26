@@ -86,7 +86,7 @@ export async function getStream(
     const response = await fetch(url, {
       method: "GET",
       headers,
-      credentials: "include", // 쿠키 기반 인증을 위해 필요
+      credentials: isDev ? "same-origin" : "include", // 로컬 개발 환경에서는 same-origin (proxy 사용)
     });
 
     if (!response.ok) {
