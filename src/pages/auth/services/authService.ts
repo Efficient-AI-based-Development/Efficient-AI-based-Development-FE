@@ -1,17 +1,5 @@
 import apiClient from "@/services/api";
 
-export interface GoogleLoginResponse {
-  access_token: string;
-  token_type: string;
-  refresh_token?: string;
-  user?: {
-    id: string;
-    email: string;
-    name: string;
-    picture?: string;
-  };
-}
-
 export interface TokenResponse {
   access_token: string;
   refresh_token: string;
@@ -20,17 +8,6 @@ export interface TokenResponse {
 
 export interface GoogleLoginUrlResponse {
   url: string;
-}
-
-export interface LoginResponse {
-  access_token: string;
-  token_type: string;
-  refresh_token?: string;
-  user?: {
-    id: string;
-    email: string;
-    name: string;
-  };
 }
 
 export const authService = {
@@ -65,93 +42,71 @@ export const authService = {
   },
 
   /**
-   * 구글 로그인 콜백 처리
-   * GET /api/v1/auth/login/google/callback?code=...
-   * 구글 로그인 후 백엔드 콜백 엔드포인트를 호출하여 토큰 받기
-   * 백엔드가 code를 쿼리 파라미터로 받음
+   * 구글 OAuth code를 토큰으로 교환
+   * POST /api/v1/auth/login/google/exchange
    */
-  handleGoogleCallback: async (code?: string): Promise<TokenResponse> => {
-    console.log("🔐 [authService] 구글 로그인 콜백 처리", { code });
+  googleTokenExchange: async (code: string): Promise<TokenResponse> => {
+    console.log("🔐 [authService] 구글 토큰 교환 시작", { code });
 
     try {
-      // URL에서 code 파라미터 추출 (전달되지 않은 경우)
-      if (!code) {
-        const urlParams = new URLSearchParams(window.location.search);
-        code = urlParams.get("code") || undefined;
-      }
-
-      if (!code) {
-        throw new Error("구글 로그인 code가 없습니다.");
-      }
-
-      // 백엔드 콜백 엔드포인트 호출 (code를 쿼리 파라미터로 전달)
-      const url = `/api/v1/auth/login/google/callback?code=${encodeURIComponent(code)}`;
-      const response = await apiClient.get<TokenResponse>(url);
-
-      // 응답 전체 로그 출력 (토큰 확인용)
-      console.log("🔍 [authService] 백엔드 응답 전체:", response.data);
-      console.log("🔍 [authService] 응답 데이터 타입:", typeof response.data);
-      console.log(
-        "🔍 [authService] 응답 데이터 키:",
-        Object.keys(response.data || {}),
+      const response = await apiClient.post<TokenResponse>(
+        "/api/v1/auth/login/google/exchange",
+        { code },
       );
 
-      console.log("✅ [authService] 구글 로그인 콜백 성공:", {
-        hasAccessToken: !!response.data.access_token,
-        hasRefreshToken: !!response.data.refresh_token,
-        tokenType: response.data.token_type,
-        hasUserInfo: !!response.data.user,
-        accessTokenLength: response.data.access_token?.length || 0,
-        refreshTokenLength: response.data.refresh_token?.length || 0,
+      console.log("✅ [authService] 구글 토큰 교환 성공:", {
+        hasAccessToken: !!response.data?.access_token,
+        hasRefreshToken: !!response.data?.refresh_token,
+        tokenType: response.data?.token_type,
+        fullResponse: response.data,
       });
 
-      // 토큰이 실제로 있는지 상세 확인
-      if (response.data.access_token) {
-        console.log("✅ [authService] access_token 발견!");
-        console.log(
-          "🔍 [authService] access_token 미리보기:",
-          `${response.data.access_token.substring(0, 50)}...`,
-        );
-      } else {
-        console.warn("⚠️ [authService] access_token이 응답에 없습니다!");
-        console.warn(
-          "⚠️ [authService] 응답 데이터:",
-          JSON.stringify(response.data, null, 2),
-        );
+      // 응답 데이터 검증
+      if (!response.data) {
+        throw new Error("백엔드 응답 데이터가 없습니다.");
       }
 
-      // 백엔드가 쿠키 기반 인증을 사용하므로 토큰은 쿠키에 저장됨
-      // 사용자 정보만 localStorage에 저장 (선택적)
-      if (response.data.user) {
-        localStorage.setItem("userInfo", JSON.stringify(response.data.user));
-        console.log(
-          "✅ [authService] 사용자 정보 저장 완료:",
-          response.data.user,
-        );
+      if (!response.data.access_token) {
+        throw new Error("access_token이 응답에 없습니다.");
       }
 
-      // 토큰이 응답에 포함된 경우에만 localStorage에 저장 (하위 호환성)
-      // 백엔드가 쿠키만 사용하는 경우 이 부분은 실행되지 않음
-      if (response.data.access_token) {
-        localStorage.setItem("token", response.data.access_token);
-        localStorage.setItem("accessToken", response.data.access_token);
-        console.log("✅ [authService] 토큰 저장 완료 (하위 호환성):", {
-          tokenLength: response.data.access_token.length,
-          tokenPreview: `${response.data.access_token.substring(0, 20)}...`,
-        });
-      } else {
-        console.log(
-          "ℹ️ [authService] 토큰이 응답에 없습니다. 쿠키 기반 인증을 사용합니다.",
-        );
-      }
+      // 토큰 저장
+      localStorage.setItem("token", response.data.access_token);
+      localStorage.setItem("accessToken", response.data.access_token);
+      
       if (response.data.refresh_token) {
         localStorage.setItem("refreshToken", response.data.refresh_token);
-        console.log("✅ [authService] refreshToken 저장 완료");
       }
+
+      // 저장 확인
+      const savedToken = localStorage.getItem("accessToken");
+      if (!savedToken) {
+        throw new Error("토큰 저장에 실패했습니다.");
+      }
+
+      console.log("✅ [authService] 토큰 저장 완료:", {
+        hasToken: !!localStorage.getItem("token"),
+        hasAccessToken: !!localStorage.getItem("accessToken"),
+        hasRefreshToken: !!localStorage.getItem("refreshToken"),
+      });
 
       return response.data;
     } catch (error) {
-      console.error("❌ [authService] 구글 로그인 콜백 처리 실패:", error);
+      console.error("❌ [authService] 구글 토큰 교환 실패:", error);
+      
+      // 상세한 에러 정보 로깅
+      if (error instanceof Error) {
+        console.error("❌ [authService] 에러 메시지:", error.message);
+        console.error("❌ [authService] 에러 스택:", error.stack);
+      }
+      
+      // Axios 에러인 경우 응답 정보도 로깅
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as any;
+        console.error("❌ [authService] 응답 상태:", axiosError.response?.status);
+        console.error("❌ [authService] 응답 데이터:", axiosError.response?.data);
+      }
+      
       throw error;
     }
   },
@@ -241,3 +196,4 @@ export const authService = {
     }
   },
 };
+
