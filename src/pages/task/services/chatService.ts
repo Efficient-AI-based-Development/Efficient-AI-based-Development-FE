@@ -68,16 +68,16 @@ export async function getStream(
   const API_BASE_URL =
     import.meta.env.VITE_API_BASE_URL ||
     (isDev ? "" : "http://34.61.144.150:8000");
-  const token =
-    localStorage.getItem("token") || localStorage.getItem("accessToken");
 
   const url = `${API_BASE_URL}/api/v1/chats/${chatSessionId}/stream`;
   const headers: HeadersInit = {
     Accept: "text/event-stream",
   };
 
-  // 쿠키 기반 인증 사용 (withCredentials는 fetch 옵션에서 설정)
-  // 토큰이 있으면 Authorization 헤더도 추가 (하위 호환성)
+  // 쿠키 기반 인증 사용 (credentials: "include"로 쿠키 자동 전송)
+  // localStorage 토큰은 선택적으로 사용 (하위 호환성)
+  const token =
+    localStorage.getItem("token") || localStorage.getItem("accessToken");
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }

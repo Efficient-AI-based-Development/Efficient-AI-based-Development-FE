@@ -9,16 +9,16 @@ const API_BASE_URL =
   (isDev ? "" : "http://34.61.144.150:8000");
 
 // axios 인스턴스 생성
-// 로컬 개발 환경에서는 Vite proxy를 사용하므로 withCredentials를 false로 설정
-// (proxy가 CORS를 처리하므로)
-// 프로덕션에서는 withCredentials를 true로 설정하여 쿠키 기반 인증 사용
+// 쿠키 기반 인증 사용 (백엔드가 쿠키로 토큰을 전달)
+// 로컬 개발 환경에서는 Vite proxy를 사용하므로 withCredentials: true도 안전함
+// (proxy가 같은 origin으로 요청을 전달하므로 CORS 문제 없음)
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000, // 10초 타임아웃
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: !isDev, // 개발 환경에서는 false, 프로덕션에서는 true
+  withCredentials: true, // 쿠키 기반 인증을 위해 항상 true
 });
 
 // 요청 인터셉터 (필요시 토큰 추가 등)
@@ -36,24 +36,17 @@ apiClient.interceptors.request.use(
         JSON.stringify(config.data, null, 2),
       );
     }
-    // 인증 토큰 추가
-    // 로컬 개발 환경: Vite proxy 사용, localStorage 토큰 사용
-    // 프로덕션 환경: 쿠키 또는 localStorage 토큰 사용
+    // 쿠키 기반 인증 사용 (백엔드가 쿠키로 토큰을 전달)
+    // withCredentials: true로 설정되어 있어 쿠키가 자동으로 전송됨
+    // localStorage 토큰은 선택적으로 사용 (하위 호환성)
     const token =
       localStorage.getItem("token") || localStorage.getItem("accessToken");
     if (token) {
+      // 토큰이 있으면 Authorization 헤더도 추가 (하위 호환성)
       config.headers.Authorization = `Bearer ${token}`;
       console.log("[API Client] Authorization 헤더 추가됨 (토큰 있음)");
     } else {
-      if (isDev) {
-        console.warn(
-          "[API Client] 로컬 개발 환경: 토큰이 없습니다. Vite proxy를 통해 요청합니다.",
-        );
-      } else {
-        console.log(
-          "[API Client] 프로덕션: 쿠키 기반 인증 사용 (토큰 없어도 쿠키로 인증 가능)",
-        );
-      }
+      console.log("[API Client] 쿠키 기반 인증 사용 (쿠키가 자동으로 전송됨)");
     }
     return config;
   },

@@ -127,29 +127,29 @@ export default function AddTaskModal({
   const handleSend = async () => {
     if (!inputValue.trim() || isSending) return;
 
-    // 토큰 확인 (백엔드가 쿠키 기반 인증을 사용할 수도 있으므로 토큰이 없어도 시도)
+    // 쿠키 기반 인증 사용 (백엔드가 쿠키로 토큰을 전달)
+    // withCredentials: true로 설정되어 있어 쿠키가 자동으로 전송됨
+    // localStorage 토큰은 선택적으로 확인 (하위 호환성)
     const token =
       localStorage.getItem("token") || localStorage.getItem("accessToken");
-    const devMode = localStorage.getItem("devMode") === "true";
     const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+    const devMode = localStorage.getItem("devMode") === "true";
 
-    // 토큰이 없고 로그인도 안 된 경우에만 에러 표시
-    // 백엔드가 쿠키 기반 인증을 사용하는 경우 토큰 없이도 작동할 수 있음
-    if (!token && !isLoggedIn && !devMode) {
+    // 로그인도 안 되고 devMode도 아닌 경우에만 에러 표시
+    if (!isLoggedIn && !devMode) {
       const errorMessage = {
         role: "assistant" as const,
         content:
-          "인증이 필요합니다. 로그인 후 다시 시도해주세요.\n\n백엔드가 쿠키 기반 인증을 사용하는 경우, 로그인 후 쿠키가 자동으로 전송됩니다.",
+          "인증이 필요합니다. 로그인 후 다시 시도해주세요.\n\n백엔드가 쿠키 기반 인증을 사용하므로, 로그인 후 쿠키가 자동으로 전송됩니다.",
       };
       setMessages((prev) => [...prev, errorMessage]);
       return;
     }
 
-    // 토큰이 없지만 로그인 상태인 경우 경고만 표시하고 계속 진행
-    // (백엔드가 쿠키 기반 인증을 사용할 수 있으므로)
+    // 쿠키 기반 인증 사용 중이므로 토큰이 없어도 계속 진행
     if (!token && isLoggedIn) {
-      console.warn(
-        "[AddTaskModal] isLoggedIn은 true이지만 토큰이 없습니다. 쿠키 기반 인증을 사용할 수 있습니다.",
+      console.log(
+        "[AddTaskModal] 쿠키 기반 인증 사용 중. 쿠키가 자동으로 전송됩니다.",
       );
     }
 
