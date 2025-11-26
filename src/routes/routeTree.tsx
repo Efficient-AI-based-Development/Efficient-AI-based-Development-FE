@@ -26,6 +26,7 @@ const MyProjectsPage = lazy(() => import("@/pages/my-projects/MyProjectsPage"));
 const McpPage = lazy(() => import("@/pages/mcp/McpPage"));
 const GuidePage = lazy(() => import("@/pages/guide/GuidePage"));
 const LoginPage = lazy(() => import("@/pages/auth/LoginPage"));
+const GoogleAuthCallbackPage = lazy(() => import("@/pages/auth/GoogleAuthCallbackPage"));
 
 const rootRoute = createRootRoute({
   component: RootLayout,
@@ -204,6 +205,16 @@ const loginRoute = createRoute({
   ),
 });
 
+const googleAuthRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/auth/google",
+  component: () => (
+    <Suspense fallback={<div className="p-6"> 로딩중...</div>}>
+      <GoogleAuthCallbackPage />
+    </Suspense>
+  ),
+});
+
 export const routeTree = rootRoute.addChildren([
   homeRoute,
   documentRoute,
@@ -218,6 +229,7 @@ export const routeTree = rootRoute.addChildren([
   mcpRoute,
   guideRoute,
   loginRoute,
+  googleAuthRoute,
 ]);
 export const router = createRouter({ routeTree });
 

@@ -55,13 +55,42 @@ export function Header() {
     select: (state) => state.location,
   });
 
-  // 로그인 상태 확인 (한 번만 체크)
-  useEffect(() => {
+  // 로그인 상태 확인 및 업데이트
+  const checkLoginStatus = () => {
     const token =
       localStorage.getItem("token") || localStorage.getItem("accessToken");
     const isLoggedInValue = localStorage.getItem("isLoggedIn");
     const loggedIn = !!token || isLoggedInValue === "true";
     setIsLoggedIn(loggedIn);
+  };
+
+  useEffect(() => {
+    // 초기 로그인 상태 확인
+    checkLoginStatus();
+
+    // localStorage 변경 감지 (다른 탭에서의 변경)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "token" || e.key === "accessToken" || e.key === "isLoggedIn") {
+        checkLoginStatus();
+      }
+    };
+
+    // 커스텀 이벤트 감지 (같은 탭에서의 변경)
+    const handleLoginStatusChange = () => {
+      checkLoginStatus();
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("loginStatusChanged", handleLoginStatusChange);
+
+    // 주기적으로 체크 (같은 탭에서의 localStorage 변경 감지)
+    const interval = setInterval(checkLoginStatus, 1000);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("loginStatusChanged", handleLoginStatusChange);
+      clearInterval(interval);
+    };
   }, []);
 
   // 선택된 프로젝트 ID 동기화
