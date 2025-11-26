@@ -105,11 +105,13 @@ apiClient.interceptors.response.use(
           return Promise.reject(refreshError);
         }
       } else {
-        // 토큰이 없거나 403 에러인 경우
+        // 쿠키 기반 인증 사용 중이므로 토큰이 없어도 쿠키로 인증 시도했을 수 있음
         // 리다이렉트하지 않고 에러만 반환 (각 컴포넌트에서 처리)
         console.error(
           `[API Client] ${error.response?.status} 에러 발생${
-            !token ? ", 토큰 없음" : ", 권한 문제일 수 있음"
+            !token
+              ? ", 쿠키 기반 인증 사용 중 (쿠키 확인 필요)"
+              : ", 권한 문제일 수 있음"
           }`,
         );
         return Promise.reject(error);

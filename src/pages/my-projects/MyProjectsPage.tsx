@@ -102,14 +102,30 @@ export default function MyProjectsPage() {
         setIsLoading(true);
         setAuthError(null);
 
+        // 쿠키 기반 인증 사용 (백엔드가 쿠키로 토큰을 전달)
+        // withCredentials: true로 설정되어 있어 쿠키가 자동으로 전송됨
+        // localStorage 토큰은 선택적으로 확인 (하위 호환성)
         const token =
           typeof window !== "undefined"
             ? localStorage.getItem("token") ||
               localStorage.getItem("accessToken")
             : null;
+        const isLoggedIn =
+          typeof window !== "undefined"
+            ? localStorage.getItem("isLoggedIn") === "true"
+            : false;
 
-        // 토큰이 없고 devMode도 아니라면 로그인 유도
-        if (!token && !devModeEnabled) {
+        // devMode에서 토큰 없이 진입하면 목업 데이터 사용
+        if (!token && devModeEnabled) {
+          const mockResponse = buildMockResponse();
+          setProjects(mockResponse.projects);
+          setMeta(mockResponse.meta);
+          return;
+        }
+
+        // 쿠키 기반 인증 사용 중이므로 토큰이 없어도 쿠키로 인증 시도
+        // 로그인도 안 되고 devMode도 아닌 경우에만 에러 표시
+        if (!isLoggedIn && !devModeEnabled && !token) {
           setProjects([]);
           setMeta((prev) => ({
             ...prev,
@@ -118,14 +134,6 @@ export default function MyProjectsPage() {
             page_size: PAGE_SIZE,
           }));
           setAuthError("missing-token");
-          return;
-        }
-
-        // devMode에서 토큰 없이 진입하면 목업 데이터 사용
-        if (!token && devModeEnabled) {
-          const mockResponse = buildMockResponse();
-          setProjects(mockResponse.projects);
-          setMeta(mockResponse.meta);
           return;
         }
 
