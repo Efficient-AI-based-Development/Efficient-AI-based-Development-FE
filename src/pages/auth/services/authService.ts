@@ -73,6 +73,7 @@ export const authService = {
       // 토큰 저장
       localStorage.setItem("token", response.data.access_token);
       localStorage.setItem("accessToken", response.data.access_token);
+      localStorage.setItem("isLoggedIn", "true"); // 로그인 상태 플래그 설정
       
       if (response.data.refresh_token) {
         localStorage.setItem("refreshToken", response.data.refresh_token);
@@ -84,10 +85,15 @@ export const authService = {
         throw new Error("토큰 저장에 실패했습니다.");
       }
 
+      // 로그인 상태 변경 이벤트 발생 (Header 컴포넌트가 감지할 수 있도록)
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new CustomEvent("loginStatusChanged", { detail: { isLoggedIn: true } }));
+
       console.log("✅ [authService] 토큰 저장 완료:", {
         hasToken: !!localStorage.getItem("token"),
         hasAccessToken: !!localStorage.getItem("accessToken"),
         hasRefreshToken: !!localStorage.getItem("refreshToken"),
+        isLoggedIn: localStorage.getItem("isLoggedIn"),
       });
 
       return response.data;
@@ -127,6 +133,11 @@ export const authService = {
       localStorage.removeItem("token");
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
+      localStorage.removeItem("isLoggedIn"); // 로그인 상태 플래그 제거
+      
+      // 로그인 상태 변경 이벤트 발생
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new CustomEvent("loginStatusChanged", { detail: { isLoggedIn: false } }));
     }
   },
 

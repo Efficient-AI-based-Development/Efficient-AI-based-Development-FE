@@ -16,17 +16,17 @@ if ("serviceWorker" in navigator) {
         registration.unregister().then((success) => {
           if (success) {
             console.log("[MSW] Service Worker unregistered");
-          }
+}
         });
       }
     }
   });
 }
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
-  </StrictMode>,
-);
+  createRoot(document.getElementById("root")!).render(
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </StrictMode>,
+  );

@@ -31,7 +31,11 @@ export default function LoginPage() {
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get("code");
       
-      const tokenResponse = await authService.handleGoogleCallback(code || undefined);
+      if (!code) {
+        throw new Error("인증 코드가 없습니다.");
+      }
+      
+      const tokenResponse = await authService.googleTokenExchange(code);
       console.log("✅ [LoginPage] 로그인 성공:", tokenResponse);
 
       // 토큰이 정상적으로 저장되었는지 확인
@@ -39,6 +43,10 @@ export default function LoginPage() {
       if (!savedToken) {
         throw new Error("토큰 저장에 실패했습니다.");
       }
+
+      // 로그인 상태 플래그 확인
+      const isLoggedIn = localStorage.getItem("isLoggedIn");
+      console.log("✅ [LoginPage] 로그인 상태:", isLoggedIn);
 
       // URL 파라미터 제거하고 세팅1 페이지로 즉시 리다이렉트
       window.history.replaceState({}, "", "/login");
