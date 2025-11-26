@@ -5,13 +5,11 @@ import axios from "axios";
 // 프로덕션에서는 전체 URL 사용
 const isDev = import.meta.env.DEV || import.meta.env.MODE === "development";
 
-// VITE_API_BASE_URL이 명시적으로 설정되지 않은 경우에만 개발/프로덕션 분기
 // 로컬 개발 환경에서는 항상 빈 문자열 사용 (Vite proxy 사용)
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
-  ? import.meta.env.VITE_API_BASE_URL
-  : isDev
-    ? ""
-    : "http://34.61.144.150:8000";
+// 프로덕션 환경에서만 VITE_API_BASE_URL 환경 변수 사용
+const API_BASE_URL = isDev
+  ? ""
+  : import.meta.env.VITE_API_BASE_URL || "http://34.61.144.150:8000";
 
 // axios 인스턴스 생성
 // 쿠키 기반 인증 사용 (백엔드가 쿠키로 토큰을 전달)
