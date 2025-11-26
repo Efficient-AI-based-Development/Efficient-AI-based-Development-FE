@@ -4,21 +4,41 @@ import axios from "axios";
 // 로컬 개발 환경에서는 Vite proxy를 사용하도록 빈 문자열 또는 상대 경로 사용
 // 프로덕션에서는 전체 URL 사용
 const isDev = import.meta.env.DEV || import.meta.env.MODE === "development";
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  (isDev ? "" : "http://34.61.144.150:8000");
+
+// VITE_API_BASE_URL이 명시적으로 설정되지 않은 경우에만 개발/프로덕션 분기
+// 로컬 개발 환경에서는 항상 빈 문자열 사용 (Vite proxy 사용)
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+  ? import.meta.env.VITE_API_BASE_URL
+  : isDev
+    ? ""
+    : "http://34.61.144.150:8000";
+
+// 디버깅: 환경 변수 확인
+if (isDev) {
+  console.log("[API Client] 개발 환경 감지됨");
+  console.log("[API Client] import.meta.env.DEV:", import.meta.env.DEV);
+  console.log("[API Client] import.meta.env.MODE:", import.meta.env.MODE);
+  console.log(
+    "[API Client] VITE_API_BASE_URL:",
+    import.meta.env.VITE_API_BASE_URL,
+  );
+  console.log(
+    "[API Client] 최종 API_BASE_URL:",
+    API_BASE_URL || "(빈 문자열 - Vite proxy 사용)",
+  );
+}
 
 // axios 인스턴스 생성
 // 쿠키 기반 인증 사용 (백엔드가 쿠키로 토큰을 전달)
-// 로컬 개발 환경에서는 Vite proxy를 사용하므로 withCredentials: true도 안전함
-// (proxy가 같은 origin으로 요청을 전달하므로 CORS 문제 없음)
+// 로컬 개발 환경: Vite proxy 사용, withCredentials: false (proxy가 쿠키를 자동으로 전달)
+// 프로덕션 환경: withCredentials: true (쿠키 직접 전송)
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000, // 10초 타임아웃
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true, // 쿠키 기반 인증을 위해 항상 true
+  withCredentials: !isDev, // 개발 환경에서는 false (proxy 사용), 프로덕션에서는 true
 });
 
 // 요청 인터셉터 (필요시 토큰 추가 등)
