@@ -64,9 +64,10 @@ export async function getStream(
   onComplete?: () => void,
 ): Promise<void> {
   // 로컬 개발 환경에서는 Vite proxy를 사용하도록 상대 경로 사용
+  const isDev = import.meta.env.DEV || import.meta.env.MODE === "development";
   const API_BASE_URL =
     import.meta.env.VITE_API_BASE_URL ||
-    (import.meta.env.DEV ? "" : "http://34.61.144.150:8000");
+    (isDev ? "" : "http://34.61.144.150:8000");
   const token =
     localStorage.getItem("token") || localStorage.getItem("accessToken");
 
@@ -75,6 +76,8 @@ export async function getStream(
     Accept: "text/event-stream",
   };
 
+  // 쿠키 기반 인증 사용 (withCredentials는 fetch 옵션에서 설정)
+  // 토큰이 있으면 Authorization 헤더도 추가 (하위 호환성)
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
@@ -83,6 +86,7 @@ export async function getStream(
     const response = await fetch(url, {
       method: "GET",
       headers,
+      credentials: "include", // 쿠키 기반 인증을 위해 필요
     });
 
     if (!response.ok) {

@@ -3,9 +3,10 @@ import axios from "axios";
 // API 기본 URL 설정 (환경 변수에서 가져오기)
 // 로컬 개발 환경에서는 Vite proxy를 사용하도록 빈 문자열 또는 상대 경로 사용
 // 프로덕션에서는 전체 URL 사용
+const isDev = import.meta.env.DEV || import.meta.env.MODE === "development";
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.DEV ? "" : "http://34.61.144.150:8000");
+  (isDev ? "" : "http://34.61.144.150:8000");
 
 // axios 인스턴스 생성
 // 로컬 개발 환경에서는 Vite proxy를 사용하므로 withCredentials를 false로 설정
@@ -17,7 +18,7 @@ export const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: !import.meta.env.DEV, // 개발 환경에서는 false, 프로덕션에서는 true
+  withCredentials: !isDev, // 개발 환경에서는 false, 프로덕션에서는 true
 });
 
 // 요청 인터셉터 (필요시 토큰 추가 등)
@@ -44,7 +45,7 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
       console.log("[API Client] Authorization 헤더 추가됨 (토큰 있음)");
     } else {
-      if (import.meta.env.DEV) {
+      if (isDev) {
         console.warn(
           "[API Client] 로컬 개발 환경: 토큰이 없습니다. Vite proxy를 통해 요청합니다.",
         );
