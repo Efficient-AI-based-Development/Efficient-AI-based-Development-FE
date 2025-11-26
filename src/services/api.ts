@@ -13,21 +13,6 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
     ? ""
     : "http://34.61.144.150:8000";
 
-// 디버깅: 환경 변수 확인
-if (isDev) {
-  console.log("[API Client] 개발 환경 감지됨");
-  console.log("[API Client] import.meta.env.DEV:", import.meta.env.DEV);
-  console.log("[API Client] import.meta.env.MODE:", import.meta.env.MODE);
-  console.log(
-    "[API Client] VITE_API_BASE_URL:",
-    import.meta.env.VITE_API_BASE_URL,
-  );
-  console.log(
-    "[API Client] 최종 API_BASE_URL:",
-    API_BASE_URL || "(빈 문자열 - Vite proxy 사용)",
-  );
-}
-
 // axios 인스턴스 생성
 // 쿠키 기반 인증 사용 (백엔드가 쿠키로 토큰을 전달)
 // 로컬 개발 환경: Vite proxy 사용, withCredentials: false (proxy가 쿠키를 자동으로 전달)
@@ -44,18 +29,6 @@ export const apiClient = axios.create({
 // 요청 인터셉터 (필요시 토큰 추가 등)
 apiClient.interceptors.request.use(
   (config) => {
-    console.log("[API Client] 요청 인터셉터");
-    console.log("[API Client] Base URL:", API_BASE_URL);
-    console.log("[API Client] 요청 URL:", config.url);
-    console.log("[API Client] 전체 URL:", `${config.baseURL}${config.url}`);
-    console.log("[API Client] 요청 Method:", config.method?.toUpperCase());
-    console.log("[API Client] 요청 Headers:", config.headers);
-    if (config.data) {
-      console.log(
-        "[API Client] 요청 Body:",
-        JSON.stringify(config.data, null, 2),
-      );
-    }
     // 쿠키 기반 인증 사용 (백엔드가 쿠키로 토큰을 전달)
     // withCredentials: true로 설정되어 있어 쿠키가 자동으로 전송됨
     // localStorage 토큰은 선택적으로 사용 (하위 호환성)
@@ -64,9 +37,6 @@ apiClient.interceptors.request.use(
     if (token) {
       // 토큰이 있으면 Authorization 헤더도 추가 (하위 호환성)
       config.headers.Authorization = `Bearer ${token}`;
-      console.log("[API Client] Authorization 헤더 추가됨 (토큰 있음)");
-    } else {
-      console.log("[API Client] 쿠키 기반 인증 사용 (쿠키가 자동으로 전송됨)");
     }
     return config;
   },
@@ -79,14 +49,6 @@ apiClient.interceptors.request.use(
 // 응답 인터셉터 (에러 처리 및 토큰 갱신)
 apiClient.interceptors.response.use(
   (response) => {
-    console.log("[API Client] 응답 인터셉터 - 성공");
-    console.log("[API Client] 응답 URL:", response.config.url);
-    console.log("[API Client] 응답 Status:", response.status);
-    console.log("[API Client] 응답 Headers:", response.headers);
-    console.log(
-      "[API Client] 응답 Data:",
-      JSON.stringify(response.data, null, 2),
-    );
     return response;
   },
   async (error) => {

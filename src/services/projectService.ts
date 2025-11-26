@@ -46,13 +46,10 @@ export async function listProjects(
     params.pageSize = options.pageSize;
   }
 
-  console.log("[ProjectService] 프로젝트 목록 조회 요청:", params);
-
   try {
     const response = await apiClient.get<ListProjectsResponse>(BASE_PATH, {
       params,
     });
-    console.log("[ProjectService] 프로젝트 목록 조회 성공:", response.data);
     return response.data;
   } catch (error) {
     logAxiosError("프로젝트 목록 조회", error);
