@@ -14,6 +14,8 @@ import {
   deleteTask,
   mapApiTaskToTask,
 } from "./services/taskService";
+import { listProjects } from "@/services/projectService";
+import type { Project } from "@/types/project";
 
 export default function TaskPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -22,6 +24,7 @@ export default function TaskPage() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [project, setProject] = useState<Project | null>(null);
   const router = useRouter();
   const search = useSearch({ from: "/task" });
 
@@ -34,6 +37,28 @@ export default function TaskPage() {
   const PROJECT_ID = Number.isNaN(parsedProjectId)
     ? DEFAULT_PROJECT_ID
     : parsedProjectId;
+
+  // 프로젝트 정보 불러오기
+  useEffect(() => {
+    const fetchProject = async () => {
+      try {
+        const response = await listProjects();
+        const currentProject = response.projects.find(
+          (p) => p.id === PROJECT_ID,
+        );
+        if (currentProject) {
+          setProject(currentProject);
+        }
+      } catch (error) {
+        // 에러 처리 - 조용히 실패
+        if (import.meta.env.DEV) {
+          console.error("프로젝트 정보 조회 실패:", error);
+        }
+      }
+    };
+
+    fetchProject();
+  }, [PROJECT_ID]);
 
   // 태스크 목록 불러오기
   useEffect(() => {
@@ -550,7 +575,7 @@ export default function TaskPage() {
       {/* 제목 + MCP 연동 버튼 */}
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-bold text-customBlack">
-          종합설계프로젝트 1팀 의 대시보드
+          {project?.title || "프로젝트"} 의 대시보드
         </h1>
         <Button
           className="bg-black hover:bg-gray-800 text-white rounded-lg px-6 py-2"
@@ -585,6 +610,7 @@ export default function TaskPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleAddTask}
+        projectId={PROJECT_ID}
       />
 
       {/* 태스크 상세 모달 */}

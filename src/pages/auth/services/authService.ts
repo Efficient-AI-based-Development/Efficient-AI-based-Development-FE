@@ -51,7 +51,7 @@ export const authService = {
 
       const googleAuthUrl = response.data.url;
       console.log("✅ [authService] 구글 OAuth URL 받음:", googleAuthUrl);
-      
+
       // 브라우저에서 구글 로그인 페이지로 리다이렉트
       if (googleAuthUrl && googleAuthUrl.startsWith("http")) {
         window.location.href = googleAuthUrl;
@@ -88,19 +88,65 @@ export const authService = {
       const url = `/api/v1/auth/login/google/callback?code=${encodeURIComponent(code)}`;
       const response = await apiClient.get<TokenResponse>(url);
 
+      // 응답 전체 로그 출력 (토큰 확인용)
+      console.log("🔍 [authService] 백엔드 응답 전체:", response.data);
+      console.log("🔍 [authService] 응답 데이터 타입:", typeof response.data);
+      console.log(
+        "🔍 [authService] 응답 데이터 키:",
+        Object.keys(response.data || {}),
+      );
+
       console.log("✅ [authService] 구글 로그인 콜백 성공:", {
         hasAccessToken: !!response.data.access_token,
         hasRefreshToken: !!response.data.refresh_token,
         tokenType: response.data.token_type,
+        hasUserInfo: !!response.data.user,
+        accessTokenLength: response.data.access_token?.length || 0,
+        refreshTokenLength: response.data.refresh_token?.length || 0,
       });
 
-      // 토큰 저장
+      // 토큰이 실제로 있는지 상세 확인
+      if (response.data.access_token) {
+        console.log("✅ [authService] access_token 발견!");
+        console.log(
+          "🔍 [authService] access_token 미리보기:",
+          `${response.data.access_token.substring(0, 50)}...`,
+        );
+      } else {
+        console.warn("⚠️ [authService] access_token이 응답에 없습니다!");
+        console.warn(
+          "⚠️ [authService] 응답 데이터:",
+          JSON.stringify(response.data, null, 2),
+        );
+      }
+
+      // 백엔드가 쿠키 기반 인증을 사용하므로 토큰은 쿠키에 저장됨
+      // 사용자 정보만 localStorage에 저장 (선택적)
+      if (response.data.user) {
+        localStorage.setItem("userInfo", JSON.stringify(response.data.user));
+        console.log(
+          "✅ [authService] 사용자 정보 저장 완료:",
+          response.data.user,
+        );
+      }
+
+      // 토큰이 응답에 포함된 경우에만 localStorage에 저장 (하위 호환성)
+      // 백엔드가 쿠키만 사용하는 경우 이 부분은 실행되지 않음
       if (response.data.access_token) {
         localStorage.setItem("token", response.data.access_token);
         localStorage.setItem("accessToken", response.data.access_token);
+        console.log("✅ [authService] 토큰 저장 완료 (하위 호환성):", {
+          tokenLength: response.data.access_token.length,
+          tokenPreview: `${response.data.access_token.substring(0, 20)}...`,
+        });
+      } else {
+        console.log(
+          "ℹ️ [authService] 토큰이 응답에 없습니다. 쿠키 기반 인증을 사용합니다.",
+        );
       }
       if (response.data.refresh_token) {
         localStorage.setItem("refreshToken", response.data.refresh_token);
+        console.log("✅ [authService] refreshToken 저장 완료");
       }
 
       return response.data;
@@ -140,7 +186,7 @@ export const authService = {
 
     try {
       const refreshToken = localStorage.getItem("refreshToken");
-      
+
       if (!refreshToken) {
         throw new Error("Refresh token이 없습니다.");
       }
@@ -195,4 +241,3 @@ export const authService = {
     }
   },
 };
-
