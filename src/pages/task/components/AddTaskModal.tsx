@@ -168,6 +168,7 @@ export default function AddTaskModal({
       // 첫 메시지인 경우 세션 시작
       if (sessionId === null) {
         sessionId = await initializeChatSession(currentInput);
+        setChatSessionId(sessionId); // 세션 ID 저장
       } else {
         // 기존 세션에 메시지 전송
         await sendMessage(sessionId, {
