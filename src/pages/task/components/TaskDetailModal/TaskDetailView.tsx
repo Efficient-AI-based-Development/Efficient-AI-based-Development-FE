@@ -124,7 +124,7 @@ export default function TaskDetailView({
         return;
       }
 
-      const result = await getTaskCommand(taskId, "cursor");
+      const result = await getTaskCommand(taskId, { providerId: "cursor" });
       await navigator.clipboard.writeText(result.command);
 
       toast({

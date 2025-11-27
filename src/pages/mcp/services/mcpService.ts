@@ -310,7 +310,7 @@ export async function getProjectConfigFile(
   options?: {
     providerId?: string;
     apiToken?: string;
-    os?: string;
+    userOs?: string;
   },
 ): Promise<{
   configContent: string;
@@ -326,23 +326,32 @@ export async function getProjectConfigFile(
     if (options?.apiToken) {
       params.append("api_token", options.apiToken);
     }
-    if (options?.os) {
-      params.append("os", options.os);
+    if (options?.userOs) {
+      params.append("user_os", options.userOs);
     }
 
     const queryString = params.toString();
     const url = `/api/v1/mcp/projects/${projectId}/config-file${queryString ? `?${queryString}` : ""}`;
 
     const response = await apiClient.get<{
-      data: {
+      configContent: string;
+      fileName: string;
+      installPath: string;
+      instructions: string[];
+    }>(url);
+
+    // 응답이 data 래퍼로 감싸져 있을 수도 있음
+    const responseData = response.data;
+    if ("data" in responseData) {
+      return responseData.data as {
         configContent: string;
         fileName: string;
         installPath: string;
         instructions: string[];
       };
-    }>(url);
+    }
 
-    return response.data.data;
+    return responseData;
   } catch (error) {
     const axiosError = error as AxiosError;
     console.error("[MCP Service] 설정 파일 생성 실패:", axiosError);
@@ -356,7 +365,10 @@ export async function getProjectConfigFile(
  */
 export async function getTaskCommand(
   taskId: number,
-  providerId?: string,
+  options?: {
+    providerId?: string;
+    format?: "vooster" | "natural";
+  },
 ): Promise<{
   command: string;
   taskId: number;
@@ -364,7 +376,14 @@ export async function getTaskCommand(
   description: string;
 }> {
   try {
-    const params = providerId ? { provider_id: providerId } : {};
+    const params: Record<string, string> = {};
+    if (options?.providerId) {
+      params.provider_id = options.providerId;
+    }
+    if (options?.format) {
+      params.format = options.format;
+    }
+
     const response = await apiClient.get<{
       command: string;
       taskId: number;

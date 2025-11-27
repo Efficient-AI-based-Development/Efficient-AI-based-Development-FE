@@ -103,7 +103,7 @@ export default function McpPage() {
       const config = await getProjectConfigFile(Number(project.id), {
         providerId,
         apiToken,
-        os: currentOS,
+        userOs: currentOS,
       });
 
       setConfigFile(config);
