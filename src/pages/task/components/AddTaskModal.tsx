@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import TaskTagAndPrioritySelector from "./TaskTagAndPrioritySelector";
 import type { TaskType } from "../../../types/task";
 import {
@@ -40,15 +39,15 @@ export default function AddTaskModal({
   const [priority, setPriority] = useState<number>(5);
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState<
-    Array<{ role: "user" | "assistant"; content: string; options?: string[] }>
+    Array<{ role: "user" | "assistant"; content: string }>
   >([]);
   const [isSending, setIsSending] = useState(false);
-  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
-  const [showOptions, setShowOptions] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [canCreateTask, setCanCreateTask] = useState(false);
   const [chatSessionId, setChatSessionId] = useState<number | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // 새 메시지가 추가되면 스크롤을 맨 아래로
   useEffect(() => {
@@ -71,33 +70,66 @@ export default function AddTaskModal({
       // 상태 초기화
       setMessages([]);
       setInputValue("");
-      setSelectedOptions([]);
-      setShowOptions(false);
       setCanCreateTask(false);
     }
   }, [isOpen, chatSessionId]);
 
-  // 스트리밍 응답에서 선택지와 canCreateTask 파싱
+  // JSON 메시지를 포맷팅하는 함수
+  const formatMessage = (content: string): string => {
+    // JSON 형태인지 확인
+    try {
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const jsonStr = jsonMatch[0];
+        const parsed = JSON.parse(jsonStr);
+
+        let formatted = "";
+
+        // message.message가 있으면 그것을 사용
+        if (parsed.message?.message) {
+          formatted = parsed.message.message;
+        } else if (parsed.message?.summary) {
+          // message.summary가 있으면 그것을 사용
+          formatted = parsed.message.summary;
+        }
+
+        // suggestions가 있으면 추가
+        if (
+          parsed.message?.suggestions &&
+          Array.isArray(parsed.message.suggestions)
+        ) {
+          if (formatted) {
+            formatted += "\n\n💡 제안사항:\n";
+          } else {
+            formatted = "💡 제안사항:\n";
+          }
+          parsed.message.suggestions.forEach((suggestion: string) => {
+            formatted += `${suggestion}\n`;
+          });
+        }
+
+        if (formatted) {
+          return formatted;
+        }
+      }
+    } catch {
+      // JSON 파싱 실패 시 원본 반환
+    }
+
+    return content;
+  };
+
+  // 스트리밍 응답에서 canCreateTask 파싱 (선택 옵션 기능 제거)
   const parseStreamResponse = (
     content: string,
   ): {
-    options?: string[];
     canCreateTask?: boolean;
+    formattedContent?: string;
   } => {
-    const result: { options?: string[]; canCreateTask?: boolean } = {};
+    const result: { canCreateTask?: boolean; formattedContent?: string } = {};
 
-    // 선택지 파싱 (예: "options: [항목1, 항목2, 항목3]")
-    const optionsMatch = content.match(/options:\s*\[(.*?)\]/s);
-    if (optionsMatch) {
-      const optionsText = optionsMatch[1];
-      const options = optionsText
-        .split(",")
-        .map((opt) => opt.trim().replace(/^["']|["']$/g, ""))
-        .filter((opt) => opt.length > 0);
-      if (options.length > 0) {
-        result.options = options;
-      }
-    }
+    // 메시지 포맷팅
+    result.formattedContent = formatMessage(content);
 
     // canCreateTask 파싱 (예: "canCreateTask: true")
     const canCreateMatch = content.match(/canCreateTask:\s*(true|false)/i);
@@ -141,7 +173,7 @@ export default function AddTaskModal({
   };
 
   const handleSend = async () => {
-    if (!inputValue.trim() || isSending) return;
+    if (!inputValue.trim() || isSending || isStreaming) return;
 
     // 쿠키 기반 인증 사용 (백엔드가 쿠키로 토큰을 전달)
     // withCredentials: true로 설정되어 있어 쿠키가 자동으로 전송됨
@@ -171,9 +203,17 @@ export default function AddTaskModal({
 
     setIsSending(true);
 
-    // 사용자 메시지 추가
+    // 사용자 메시지와 assistant 메시지(빈 상태)를 함께 추가
     const userMessage = { role: "user" as const, content: inputValue };
-    setMessages((prev) => [...prev, userMessage]);
+    const assistantMessage = { role: "assistant" as const, content: "" };
+    let assistantMessageIndex: number;
+
+    setMessages((prev) => {
+      const newMessages = [...prev, userMessage, assistantMessage];
+      // assistant 메시지 인덱스는 사용자 메시지 추가 후의 인덱스
+      assistantMessageIndex = newMessages.length - 1;
+      return newMessages;
+    });
 
     const currentInput = inputValue;
     setInputValue("");
@@ -208,11 +248,17 @@ export default function AddTaskModal({
             sessionErrorContent = `세션 생성 실패: ${sessionAxiosError.message}`;
           }
 
-          const errorMessage = {
-            role: "assistant" as const,
-            content: sessionErrorContent,
-          };
-          setMessages((prev) => [...prev, errorMessage]);
+          // 에러 메시지로 assistant 메시지 업데이트
+          setMessages((prev) => {
+            const updated = [...prev];
+            if (updated[assistantMessageIndex]) {
+              updated[assistantMessageIndex] = {
+                ...updated[assistantMessageIndex],
+                content: sessionErrorContent,
+              };
+            }
+            return updated;
+          });
           setIsSending(false);
           return; // 세션 생성 실패 시 여기서 종료
         }
@@ -223,33 +269,87 @@ export default function AddTaskModal({
         });
       }
 
-      // 스트리밍 응답을 받을 메시지 추가 (빈 상태로 시작)
-      const assistantMessageIndex = messages.length;
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: "", options: undefined },
-      ]);
+      // 이전 스트림이 있으면 취소
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+
+      // 새로운 AbortController 생성
+      const abortController = new AbortController();
+      abortControllerRef.current = abortController;
 
       let streamedContent = "";
+      setIsStreaming(true);
 
-      // 스트리밍 응답 처리
-      await getStream(
-        sessionId,
-        (data: string) => {
-          streamedContent += data;
-          // 실시간으로 메시지 업데이트
+      // 타임아웃 설정: 3초 동안 새로운 데이터가 오지 않으면 자동 완료 처리
+      let timeoutId: NodeJS.Timeout | null = null;
+      const resetTimeout = () => {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        timeoutId = setTimeout(() => {
+          // 타임아웃 발생 시 강제로 완료 처리
+          console.log("스트리밍 타임아웃 - 자동 완료 처리");
+          setIsStreaming(false);
+          setIsSending(false);
+          abortControllerRef.current = null;
+
+          // 최종 파싱 및 업데이트
+          const parsed = parseStreamResponse(streamedContent);
           setMessages((prev) => {
             const updated = [...prev];
             if (updated[assistantMessageIndex]) {
               updated[assistantMessageIndex] = {
                 ...updated[assistantMessageIndex],
-                content: streamedContent,
+                content: parsed.formattedContent || streamedContent,
+              };
+            }
+            return updated;
+          });
+          setCanCreateTask(parsed.canCreateTask ?? true);
+
+          setTimeout(() => {
+            textareaRef.current?.focus();
+          }, 100);
+        }, 3000); // 3초 타임아웃
+      };
+
+      // 초기 타임아웃 시작
+      resetTimeout();
+
+      // 스트리밍 응답 처리
+      await getStream(
+        sessionId,
+        (data: string) => {
+          resetTimeout(); // 새로운 데이터가 올 때마다 타임아웃 리셋
+          streamedContent += data;
+          // 실시간으로 메시지 업데이트 (포맷팅 시도, 실패 시 원본 표시)
+          const formatted = formatMessage(streamedContent);
+          setMessages((prev) => {
+            const updated = [...prev];
+            if (updated[assistantMessageIndex]) {
+              updated[assistantMessageIndex] = {
+                ...updated[assistantMessageIndex],
+                content:
+                  formatted !== streamedContent ? formatted : streamedContent,
               };
             }
             return updated;
           });
         },
         (error: Error) => {
+          // 타임아웃 취소
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+          }
+
+          // AbortError는 정상적인 취소이므로 무시
+          if (error.name === "AbortError") {
+            console.log("스트리밍 취소됨");
+            return;
+          }
+
           console.error("스트리밍 에러:", error);
           setMessages((prev) => {
             const updated = [...prev];
@@ -263,33 +363,57 @@ export default function AddTaskModal({
             }
             return updated;
           });
+          // 에러 발생 시 입력창 활성화
+          setIsSending(false);
+          setIsStreaming(false);
+          abortControllerRef.current = null;
         },
         () => {
-          // 스트리밍 완료 후 파싱
-          const parsed = parseStreamResponse(streamedContent);
-
-          setMessages((prev) => {
-            const updated = [...prev];
-            if (updated[assistantMessageIndex]) {
-              updated[assistantMessageIndex] = {
-                ...updated[assistantMessageIndex],
-                content: streamedContent,
-                options: parsed.options,
-              };
-            }
-            return updated;
-          });
-
-          if (parsed.options) {
-            setShowOptions(true);
-            setSelectedOptions([]);
+          // 타임아웃 취소
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
           }
 
-          setCanCreateTask(parsed.canCreateTask ?? false);
+          // 스트리밍 완료 - 먼저 스트리밍 상태를 false로 설정
+          setIsStreaming(false);
+
+          // 스트리밍 완료 후 파싱 (메시지는 이미 스트리밍 중에 업데이트되었으므로 최종 파싱만 수행)
+          const parsed = parseStreamResponse(streamedContent);
+
+          // 최종 메시지 업데이트 (포맷팅된 내용이 있는 경우에만)
+          if (
+            parsed.formattedContent &&
+            parsed.formattedContent !== streamedContent
+          ) {
+            setMessages((prev) => {
+              const updated = [...prev];
+              if (updated[assistantMessageIndex]) {
+                updated[assistantMessageIndex] = {
+                  ...updated[assistantMessageIndex],
+                  content: parsed.formattedContent || streamedContent,
+                };
+              }
+              return updated;
+            });
+          }
+
+          // 선택 옵션 기능 제거 - 항상 입력창 활성화
+          setCanCreateTask(parsed.canCreateTask ?? true);
+          setIsSending(false);
+          abortControllerRef.current = null;
+
+          // 입력창에 자동 포커스
+          setTimeout(() => {
+            textareaRef.current?.focus();
+          }, 100);
         },
+        abortController.signal,
       );
     } catch (error) {
       console.error("메시지 전송 실패:", error);
+      setIsStreaming(false);
+      abortControllerRef.current = null;
 
       // 에러 타입에 따라 다른 메시지 표시
       const axiosError = error as {
@@ -335,6 +459,7 @@ export default function AddTaskModal({
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsSending(false);
+      setIsStreaming(false);
     }
   };
 
@@ -350,123 +475,9 @@ export default function AddTaskModal({
     // 모달 초기화
     setMessages([]);
     setInputValue("");
-    setSelectedOptions([]);
-    setShowOptions(false);
     setCanCreateTask(false);
+    setIsStreaming(false);
     onClose();
-  };
-
-  const handleOptionToggle = (option: string) => {
-    setSelectedOptions((prev) =>
-      prev.includes(option)
-        ? prev.filter((o) => o !== option)
-        : [...prev, option],
-    );
-  };
-
-  const handleContinueChat = async () => {
-    if (selectedOptions.length === 0 || !chatSessionId) return;
-
-    const selectedText = `다음 항목들을 선택했습니다:\n${selectedOptions.map((o) => `- ${o}`).join("\n")}`;
-    const userMessage = { role: "user" as const, content: selectedText };
-    setMessages((prev) => [...prev, userMessage]);
-
-    setIsSending(true);
-    setShowOptions(false);
-
-    try {
-      // 메시지 전송
-      await sendMessage(chatSessionId, {
-        content_md: selectedText,
-      });
-
-      // 스트리밍 응답을 받을 메시지 추가
-      const assistantMessageIndex = messages.length;
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: "", options: undefined },
-      ]);
-
-      let streamedContent = "";
-
-      // 스트리밍 응답 처리
-      await getStream(
-        chatSessionId,
-        (data: string) => {
-          streamedContent += data;
-          setMessages((prev) => {
-            const updated = [...prev];
-            if (updated[assistantMessageIndex]) {
-              updated[assistantMessageIndex] = {
-                ...updated[assistantMessageIndex],
-                content: streamedContent,
-              };
-            }
-            return updated;
-          });
-        },
-        (error: Error) => {
-          console.error("스트리밍 에러:", error);
-          setMessages((prev) => {
-            const updated = [...prev];
-            if (updated[assistantMessageIndex]) {
-              updated[assistantMessageIndex] = {
-                ...updated[assistantMessageIndex],
-                content:
-                  streamedContent ||
-                  "죄송합니다. 일시적인 오류가 발생했습니다. 다시 시도해주세요.",
-              };
-            }
-            return updated;
-          });
-        },
-        () => {
-          // 스트리밍 완료 후 파싱
-          const parsed = parseStreamResponse(streamedContent);
-
-          setMessages((prev) => {
-            const updated = [...prev];
-            if (updated[assistantMessageIndex]) {
-              updated[assistantMessageIndex] = {
-                ...updated[assistantMessageIndex],
-                content: streamedContent,
-                options: parsed.options,
-              };
-            }
-            return updated;
-          });
-
-          if (parsed.options) {
-            setShowOptions(true);
-            setSelectedOptions([]);
-          }
-
-          setCanCreateTask(parsed.canCreateTask ?? true); // 선택 완료 후 일반적으로 Task 생성 가능
-        },
-      );
-    } catch (error) {
-      console.error("메시지 전송 실패:", error);
-
-      // 에러 타입에 따라 다른 메시지 표시
-      const axiosError = error as { response?: { status?: number } };
-      let errorContent =
-        "죄송합니다. 일시적인 오류가 발생했습니다. 다시 시도해주세요.";
-
-      if (
-        axiosError.response?.status === 403 ||
-        axiosError.response?.status === 401
-      ) {
-        errorContent = "인증이 필요합니다. 로그인 페이지로 이동합니다.";
-      }
-
-      const errorMessage = {
-        role: "assistant" as const,
-        content: errorContent,
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      setIsSending(false);
-    }
   };
 
   return (
@@ -505,60 +516,71 @@ export default function AddTaskModal({
             </div>
 
             {/* 채팅 메시지들 */}
-            {messages.map((message, index) => (
-              <div key={index}>
-                <div
-                  className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-                >
-                  <div
-                    className={`max-w-[70%] px-4 py-3 rounded-lg ${
-                      message.role === "user"
-                        ? "bg-primary text-white"
-                        : "bg-gray-200 text-gray-800"
-                    }`}
-                  >
-                    <p className="whitespace-pre-wrap">{message.content}</p>
+            {messages.map((message, index) => {
+              const isUser = message.role === "user";
+              const isAssistant = message.role === "assistant";
+              const isLastMessage = index === messages.length - 1;
+              const hasContent =
+                message.content && message.content.trim().length > 0;
+              const isEmptyOrLoading =
+                isAssistant &&
+                isLastMessage &&
+                !hasContent &&
+                (isSending || isStreaming);
+              // 스트리밍 중이면 무조건 "응답 생성 중..." 표시
+              const isStreamingMessage =
+                isAssistant && isLastMessage && isStreaming;
 
-                    {/* 선택지가 있는 경우 - 메시지 버블 안에 */}
-                    {message.options &&
-                      index === messages.length - 1 &&
-                      showOptions && (
-                        <div className="mt-4 space-y-3">
-                          <p className="text-sm font-semibold">선택지 버튼 :</p>
-                          {message.options.map((option) => (
-                            <div
-                              key={option}
-                              className="flex items-center gap-2"
-                            >
-                              <Checkbox
-                                id={option}
-                                checked={selectedOptions.includes(option)}
-                                onCheckedChange={() =>
-                                  handleOptionToggle(option)
-                                }
-                              />
-                              <label
-                                htmlFor={option}
-                                className="text-sm cursor-pointer"
-                              >
-                                {option}
-                              </label>
+              return (
+                <div key={index}>
+                  <div
+                    className={`flex ${isUser ? "justify-end" : "justify-start"}`}
+                  >
+                    <div
+                      className={`max-w-[70%] px-4 py-3 rounded-lg ${
+                        isUser
+                          ? "bg-[#7871FE] text-white"
+                          : "bg-gray-200 text-gray-800"
+                      }`}
+                    >
+                      {isEmptyOrLoading ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-600">
+                            생각 중...
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <span
+                              className="inline-block w-2 h-2 bg-gray-600 rounded-full animate-bounce"
+                              style={{ animationDelay: "0ms" }}
+                            ></span>
+                            <span
+                              className="inline-block w-2 h-2 bg-gray-600 rounded-full animate-bounce"
+                              style={{ animationDelay: "150ms" }}
+                            ></span>
+                            <span
+                              className="inline-block w-2 h-2 bg-gray-600 rounded-full animate-bounce"
+                              style={{ animationDelay: "300ms" }}
+                            ></span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="whitespace-pre-wrap">
+                            {message.content}
+                          </p>
+                          {isStreamingMessage && (
+                            <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
+                              <span className="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full animate-pulse"></span>
+                              <span>응답 생성 중...</span>
                             </div>
-                          ))}
-                          <Button
-                            onClick={handleContinueChat}
-                            disabled={selectedOptions.length === 0}
-                            size="sm"
-                            className="w-full bg-gray-800 text-white hover:bg-gray-900 disabled:opacity-50 mt-3"
-                          >
-                            확인
-                          </Button>
+                          )}
                         </div>
                       )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {/* 스크롤 앵커 */}
             <div ref={chatEndRef} />
           </div>
@@ -567,13 +589,14 @@ export default function AddTaskModal({
           <div className="space-y-3">
             <div className="relative">
               <Textarea
+                ref={textareaRef}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder="메시지를 입력하세요..."
                 className="w-full min-h-[100px] resize-none pr-16 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
-                disabled={showOptions}
+                disabled={isSending}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
+                  if (e.key === "Enter" && !e.shiftKey && !isSending) {
                     e.preventDefault();
                     handleSend();
                   }
@@ -581,7 +604,7 @@ export default function AddTaskModal({
               />
               <button
                 onClick={handleSend}
-                disabled={isSending || showOptions}
+                disabled={isSending}
                 className="absolute bottom-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50 focus:outline-none focus-visible:outline-none"
               >
                 <Send className="w-5 h-5 text-gray-600" />
@@ -590,25 +613,12 @@ export default function AddTaskModal({
 
             {/* 버튼 영역 */}
             {messages.length > 0 && (
-              <div className="flex gap-3 items-center">
-                {/* 아니야, AI랑 대화할래 버튼 */}
-                {showOptions && (
-                  <Button
-                    onClick={() => {
-                      setShowOptions(false);
-                      setSelectedOptions([]);
-                    }}
-                    className="flex-1 bg-black text-white hover:bg-black/90"
-                  >
-                    아니야, AI랑 대화할래
-                  </Button>
-                )}
-
+              <div className="flex gap-3 items-center justify-end">
                 {/* Task 생성하기 버튼 */}
                 <Button
                   onClick={handleSubmit}
                   disabled={!canCreateTask}
-                  className={`px-6 font-semibold text-white bg-black hover:bg-black/90 disabled:opacity-50 disabled:cursor-not-allowed ${showOptions ? "" : "ml-auto"}`}
+                  className="px-6 font-semibold text-white bg-black hover:bg-black/90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Task 생성하기
                 </Button>

@@ -52,6 +52,13 @@ apiClient.interceptors.response.use(
   async (error) => {
     console.error("[API Client] 응답 인터셉터 - 에러");
 
+    // 토큰 갱신 요청 자체는 인터셉터에서 제외 (무한 루프 방지)
+    const isRefreshRequest = error.config?.url?.includes("/auth/refresh");
+    if (isRefreshRequest) {
+      console.error("[API Client] 토큰 갱신 요청 실패, 인터셉터 건너뜀");
+      return Promise.reject(error);
+    }
+
     // 401 또는 403 에러인 경우 인증 문제 처리
     if (error.response?.status === 401 || error.response?.status === 403) {
       const refreshToken = localStorage.getItem("refreshToken");
@@ -60,12 +67,15 @@ apiClient.interceptors.response.use(
         localStorage.getItem("token") || localStorage.getItem("accessToken");
 
       // 401 또는 403 에러이고 refreshToken이 있으면 토큰 갱신 시도
+      // 단, 이미 재시도한 요청이거나 토큰 갱신 중인 요청은 제외
       if (
         (error.response?.status === 401 || error.response?.status === 403) &&
         refreshToken &&
-        !originalRequest._retry
+        !originalRequest._retry &&
+        !originalRequest._isRefreshing
       ) {
         originalRequest._retry = true;
+        originalRequest._isRefreshing = true;
 
         try {
           console.log(
@@ -76,12 +86,28 @@ apiClient.interceptors.response.use(
           );
           await authService.refreshToken();
 
+          // 토큰 갱신 성공 후 플래그 제거
+          originalRequest._isRefreshing = false;
+
           // 원래 요청 재시도
           return apiClient(originalRequest);
         } catch (refreshError) {
           console.error("[API Client] 토큰 갱신 실패:", refreshError);
+          // 토큰 갱신 실패 시 플래그 제거 및 토큰 정리
+          originalRequest._isRefreshing = false;
+
+          // 토큰 갱신 실패 시 refreshToken도 제거하여 무한 루프 방지
+          if (
+            refreshError.response?.status === 401 ||
+            refreshError.response?.status === 403
+          ) {
+            localStorage.removeItem("refreshToken");
+            localStorage.removeItem("token");
+            localStorage.removeItem("accessToken");
+            console.warn("[API Client] 토큰 갱신 실패로 인해 토큰 제거");
+          }
+
           // 토큰 갱신 실패 시 에러만 반환 (리다이렉트는 각 컴포넌트에서 처리)
-          // Chat API 같은 경우 리다이렉트하지 않고 에러 메시지만 표시해야 함
           return Promise.reject(refreshError);
         }
       } else {

@@ -8,11 +8,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Copy } from "lucide-react";
+import { Copy, Download } from "lucide-react";
 import type { ProjectMcpStatus, AssistantType } from "./types";
 import { mapAssistantToProvider } from "./types";
-import { listProjects, createConnection } from "./services/mcpService";
+import {
+  listProjects,
+  createConnection,
+  getProjectConfigFile,
+} from "./services/mcpService";
 
 export default function McpPage() {
   const [project, setProject] = useState<ProjectMcpStatus | null>(null);
@@ -20,6 +31,14 @@ export default function McpPage() {
   const [isCreatingConnection, setIsCreatingConnection] = useState(false);
   const [selectedAssistant, setSelectedAssistant] =
     useState<AssistantType>("Cursor");
+  const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
+  const [configFile, setConfigFile] = useState<{
+    configContent: string;
+    fileName: string;
+    installPath: string;
+    instructions: string[];
+  } | null>(null);
+  const [isLoadingConfig, setIsLoadingConfig] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -48,11 +67,66 @@ export default function McpPage() {
     fetchProject();
   }, [toast]);
 
-  const handleCopyCommand = (command: string) => {
-    navigator.clipboard.writeText(command);
+  // 현재 OS 감지
+  const getCurrentOS = (): string => {
+    const platform = navigator.platform.toLowerCase();
+    if (platform.includes("mac") || platform.includes("darwin")) {
+      return "macOS";
+    } else if (platform.includes("win")) {
+      return "Windows";
+    } else {
+      return "Linux";
+    }
+  };
+
+  // 설정 파일 다운로드 핸들러
+  const handleDownloadConfigFile = async () => {
+    if (!project) {
+      toast({
+        title: "프로젝트 정보가 없습니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsLoadingConfig(true);
+      const providerId = mapAssistantToProvider(selectedAssistant);
+      const currentOS = getCurrentOS();
+
+      // API 토큰 가져오기 (localStorage에서)
+      const apiToken =
+        localStorage.getItem("token") ||
+        localStorage.getItem("accessToken") ||
+        "";
+
+      const config = await getProjectConfigFile(Number(project.id), {
+        providerId,
+        apiToken,
+        os: currentOS,
+      });
+
+      setConfigFile(config);
+      setIsConfigDialogOpen(true);
+    } catch (error) {
+      console.error("[McpPage] 설정 파일 생성 실패:", error);
+      toast({
+        title: "설정 파일 생성에 실패했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingConfig(false);
+    }
+  };
+
+  // 설정 파일 내용 복사
+  const handleCopyConfigContent = () => {
+    if (!configFile) return;
+    navigator.clipboard.writeText(configFile.configContent);
     toast({
-      title: "복사되었습니다!",
-      duration: 3000,
+      title: "설정 파일 내용이 복사되었습니다!",
+      description: configFile.installPath,
+      duration: 5000,
     });
   };
 
@@ -93,9 +167,6 @@ export default function McpPage() {
     }
   };
 
-  // Provider ID 매핑
-  const providerId = mapAssistantToProvider(selectedAssistant);
-
   // 프로젝트 ID가 없으면 에러 표시
   if (!project?.id) {
     return (
@@ -104,15 +175,6 @@ export default function McpPage() {
       </div>
     );
   }
-
-  const commands = [
-    { text: "npm i -g fastmcp-cli", label: "CLI 설치" },
-    { text: "cd /path/to/project", label: "프로젝트 디렉토리로 이동" },
-    {
-      text: `fastmcp init --provider ${providerId} --project ${project.id}`,
-      label: "프로젝트 연동",
-    },
-  ];
 
   if (isLoading) {
     return (
@@ -157,42 +219,37 @@ export default function McpPage() {
           </div>
         </div>
 
-        {/* 프로젝트 연동 명령어 */}
+        {/* MCP 연결 설정 안내 */}
         <div className="bg-white border border-gray-300 rounded-lg p-8 mb-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            프로젝트 연동 명령어
+            MCP 연결 설정
           </h2>
           <p className="text-sm text-gray-600 mb-6">
-            아래 명령어를 실행하여 이 프로젝트에 MCP를 연동하세요.
+            아래 버튼을 클릭하여 MCP 설정 파일을 생성하고 Cursor에 연동하세요.
+            자동으로 토큰이 포함된 설정 파일이 생성됩니다.
           </p>
 
-          <div className="space-y-3">
-            {commands.map((cmd, idx) => (
-              <div
-                key={idx}
-                className="bg-gray-900 text-white rounded-lg p-4 font-mono text-sm cursor-pointer hover:bg-gray-800 transition-colors"
-                onClick={() => handleCopyCommand(cmd.text)}
-              >
-                <div className="flex items-center justify-between">
-                  <code className="break-all">{cmd.text}</code>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCopyCommand(cmd.text);
-                    }}
-                    className="ml-4 p-2 hover:bg-gray-800 rounded transition-colors flex-shrink-0"
-                    aria-label="복사"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <p className="text-sm text-blue-800">
+              💡 <strong>팁:</strong> 설정 파일을 생성하면 자동으로 토큰이
+              포함되어 있어 별도로 토큰을 입력할 필요가 없습니다.
+            </p>
+          </div>
+
+          <div className="flex justify-start gap-3">
+            <Button
+              className="bg-gray-700 hover:bg-gray-600 text-white rounded-lg px-8 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleDownloadConfigFile}
+              disabled={isLoadingConfig}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              {isLoadingConfig ? "생성 중..." : "MCP 설정 파일 다운로드"}
+            </Button>
           </div>
         </div>
 
         {/* 완료 버튼 */}
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-3">
           <Button
             className="bg-black hover:bg-gray-800 text-white rounded-lg px-8 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleComplete}
@@ -202,6 +259,66 @@ export default function McpPage() {
           </Button>
         </div>
       </div>
+
+      {/* 설정 파일 다이얼로그 */}
+      <Dialog open={isConfigDialogOpen} onOpenChange={setIsConfigDialogOpen}>
+        <DialogContent className="max-w-3xl bg-white max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">
+              MCP 설정 파일
+            </DialogTitle>
+            <DialogDescription>
+              아래 설정 파일 내용을 복사하여 Cursor 설정 파일에 붙여넣으세요.
+            </DialogDescription>
+          </DialogHeader>
+
+          {configFile && (
+            <div className="space-y-6 mt-4">
+              {/* 설치 경로 */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                  설치 경로
+                </h3>
+                <p className="text-sm text-gray-600 font-mono bg-gray-50 p-2 rounded">
+                  {configFile.installPath}
+                </p>
+              </div>
+
+              {/* 설정 파일 내용 */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-semibold text-gray-700">
+                    설정 파일 내용 ({configFile.fileName})
+                  </h3>
+                  <Button
+                    onClick={handleCopyConfigContent}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <Copy className="w-4 h-4 mr-2" />
+                    복사
+                  </Button>
+                </div>
+                <pre className="bg-gray-900 text-white p-4 rounded-lg overflow-x-auto text-xs">
+                  <code>{configFile.configContent}</code>
+                </pre>
+              </div>
+
+              {/* 설치 안내 */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                  설치 안내
+                </h3>
+                <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600">
+                  {configFile.instructions.map((instruction, index) => (
+                    <li key={index}>{instruction}</li>
+                  ))}
+                </ol>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

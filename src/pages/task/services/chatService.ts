@@ -84,6 +84,7 @@ export async function getStream(
   onMessage: (data: string) => void,
   onError?: (error: Error) => void,
   onComplete?: () => void,
+  signal?: AbortSignal,
 ): Promise<void> {
   // 로컬 개발 환경에서는 Vite proxy를 사용하도록 상대 경로 사용
   const isDev = import.meta.env.DEV || import.meta.env.MODE === "development";
@@ -109,6 +110,7 @@ export async function getStream(
       method: "GET",
       headers,
       credentials: isDev ? "same-origin" : "include", // 로컬 개발 환경에서는 same-origin (proxy 사용)
+      signal, // AbortSignal 전달
     });
 
     if (!response.ok) {
@@ -146,6 +148,11 @@ export async function getStream(
       }
     }
   } catch (error) {
+    // AbortError는 정상적인 취소이므로 에러로 처리하지 않음
+    if (error instanceof Error && error.name === "AbortError") {
+      return; // 조용히 종료
+    }
+
     const err = error instanceof Error ? error : new Error(String(error));
     console.error("[Chat Service] 스트리밍 실패:", err);
     onError?.(err);
