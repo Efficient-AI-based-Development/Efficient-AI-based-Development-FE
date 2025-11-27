@@ -24,9 +24,7 @@ export interface SendMessageRequest {
 
 export type SendMessageResponse = string;
 
-export interface CancelSessionResponse {
-  message?: string;
-}
+export type CancelSessionResponse = string;
 
 export interface StoreFileRequest {
   project_id: number;

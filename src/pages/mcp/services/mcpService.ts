@@ -300,3 +300,112 @@ export async function listRunEvents(runId: string): Promise<RunEvent[]> {
     throw error;
   }
 }
+
+/**
+ * MCP 설정 파일 생성 (프로젝트별)
+ * GET /api/v1/mcp/projects/{project_id}/config-file
+ */
+export async function getProjectConfigFile(
+  projectId: number,
+  options?: {
+    providerId?: string;
+    apiToken?: string;
+    userOs?: string;
+  },
+): Promise<{
+  configContent: string;
+  fileName: string;
+  installPath: string;
+  instructions: string[];
+}> {
+  try {
+    const params = new URLSearchParams();
+    if (options?.providerId) {
+      params.append("provider_id", options.providerId);
+    }
+    if (options?.apiToken) {
+      params.append("api_token", options.apiToken);
+    }
+    if (options?.userOs) {
+      params.append("user_os", options.userOs);
+    }
+
+    const queryString = params.toString();
+    const url = `/api/v1/mcp/projects/${projectId}/config-file${queryString ? `?${queryString}` : ""}`;
+
+    const response = await apiClient.get<{
+      configContent: string;
+      fileName: string;
+      installPath: string;
+      instructions: string[];
+    }>(url);
+
+    // 응답이 data 래퍼로 감싸져 있을 수도 있음
+    const responseData = response.data;
+    if ("data" in responseData) {
+      return responseData.data as {
+        configContent: string;
+        fileName: string;
+        installPath: string;
+        instructions: string[];
+      };
+    }
+
+    return responseData;
+  } catch (error) {
+    const axiosError = error as AxiosError;
+    console.error("[MCP Service] 설정 파일 생성 실패:", axiosError);
+    throw error;
+  }
+}
+
+/**
+ * 태스크별 MCP 명령어 생성
+ * GET /api/v1/mcp/tasks/{task_id}/command
+ */
+export async function getTaskCommand(
+  taskId: number,
+  options?: {
+    providerId?: string;
+    format?: "vooster" | "natural";
+  },
+): Promise<{
+  command: string;
+  taskId: number;
+  taskTitle: string;
+  description: string;
+}> {
+  try {
+    const params: Record<string, string> = {};
+    if (options?.providerId) {
+      params.provider_id = options.providerId;
+    }
+    if (options?.format) {
+      params.format = options.format;
+    }
+
+    const response = await apiClient.get<{
+      command: string;
+      taskId: number;
+      taskTitle: string;
+      description: string;
+    }>(`/api/v1/mcp/tasks/${taskId}/command`, { params });
+
+    // 응답이 data 래퍼로 감싸져 있을 수도 있음
+    const responseData = response.data;
+    if ("data" in responseData) {
+      return responseData.data as {
+        command: string;
+        taskId: number;
+        taskTitle: string;
+        description: string;
+      };
+    }
+
+    return responseData;
+  } catch (error) {
+    const axiosError = error as AxiosError;
+    console.error("[MCP Service] 태스크 명령어 생성 실패:", axiosError);
+    throw error;
+  }
+}
