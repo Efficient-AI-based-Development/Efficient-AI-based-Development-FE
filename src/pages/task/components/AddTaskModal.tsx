@@ -322,7 +322,24 @@ export default function AddTaskModal({
         sessionId,
         (data: string) => {
           resetTimeout(); // 새로운 데이터가 올 때마다 타임아웃 리셋
-          streamedContent += data;
+
+          // 각 data 라인이 완전한 JSON인지 확인
+          let isCompleteJson = false;
+          try {
+            JSON.parse(data);
+            isCompleteJson = true;
+          } catch {
+            // 완전한 JSON이 아님
+          }
+
+          if (isCompleteJson) {
+            // 완전한 JSON이면 이것을 사용 (이전 내용 덮어쓰기)
+            streamedContent = data;
+          } else {
+            // 완전한 JSON이 아니면 누적 (점진적 스트리밍)
+            streamedContent += data;
+          }
+
           // 실시간으로 메시지 업데이트 (포맷팅 시도, 실패 시 원본 표시)
           const formatted = formatMessage(streamedContent);
           setMessages((prev) => {
