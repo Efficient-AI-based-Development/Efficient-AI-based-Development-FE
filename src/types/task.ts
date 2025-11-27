@@ -28,7 +28,7 @@ export interface TaskStats {
 }
 
 // API 타입 정의
-export type ApiTaskType = "feat" | "design" | "docs";
+export type ApiTaskType = "dev" | "design" | "docs";
 export type ApiTaskStatus = "todo" | "in_progress" | "review" | "done";
 export type ApiTaskSource = "MCP" | "USER";
 

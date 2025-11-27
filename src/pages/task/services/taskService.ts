@@ -15,11 +15,11 @@ import type { AxiosError } from "axios";
 
 /**
  * TaskType을 API 타입으로 변환
- * DEV → "feat", DESIGN → "design", DOCS → "docs"
+ * DEV → "dev", DESIGN → "design", DOCS → "docs"
  */
 export function mapTaskTypeToApiType(taskType: TaskType): ApiTaskType {
   const mapping: Record<TaskType, ApiTaskType> = {
-    DEV: "feat",
+    DEV: "dev",
     DESIGN: "design",
     DOCS: "docs",
   };
@@ -28,11 +28,11 @@ export function mapTaskTypeToApiType(taskType: TaskType): ApiTaskType {
 
 /**
  * API 타입을 TaskType으로 변환
- * "feat" → DEV, "design" → DESIGN, "docs" → DOCS
+ * "dev" → DEV, "design" → DESIGN, "docs" → DOCS
  */
 export function mapApiTypeToTaskType(apiType: ApiTaskType): TaskType {
   const mapping: Record<ApiTaskType, TaskType> = {
-    feat: "DEV",
+    dev: "DEV",
     design: "DESIGN",
     docs: "DOCS",
   };
@@ -225,6 +225,82 @@ export async function deleteTask(taskId: number): Promise<void> {
     return;
   } catch (error) {
     const axiosError = error as AxiosError;
+    throw axiosError;
+  }
+}
+
+/**
+ * 태스크 인사이트 조회 API 호출
+ * GET /api/v1/tasks/insights
+ */
+export async function getTaskInsights(): Promise<unknown> {
+  const url = `/api/v1/tasks/insights`;
+
+  try {
+    const response = await apiClient.get(url);
+    return response.data;
+  } catch (error) {
+    const axiosError = error as AxiosError;
+    console.error("[Task Service] 태스크 인사이트 조회 실패:", axiosError);
+    throw axiosError;
+  }
+}
+
+/**
+ * 개발 시작 API 호출
+ * POST /api/v1/tasks/{task_id}/start-development
+ */
+export async function startDevelopment(
+  taskId: number,
+  data?: {
+    provider_id?: "chatgpt" | "claude" | "cursor";
+    options?: {
+      mode?: string;
+      temperature?: number;
+    };
+  },
+): Promise<{
+  session_id: string;
+  run_id: string;
+  status: string;
+  preview: string;
+  summary: string | null;
+}> {
+  const url = `/api/v1/tasks/${taskId}/start-development`;
+
+  try {
+    const response = await apiClient.post(url, data || {});
+    return response.data;
+  } catch (error) {
+    const axiosError = error as AxiosError;
+    console.error("[Task Service] 개발 시작 실패:", axiosError);
+    throw axiosError;
+  }
+}
+
+/**
+ * 개발 시작 명령어 조회 API 호출
+ * GET /api/v1/tasks/{task_id}/start-development/command
+ */
+export async function getStartDevelopmentCommand(
+  taskId: number,
+  providerId?: string,
+): Promise<{
+  command: string;
+  providerId: string;
+  taskId: number;
+  projectId: number;
+  note: string;
+}> {
+  const url = `/api/v1/tasks/${taskId}/start-development/command`;
+  const params = providerId ? { provider_id: providerId } : {};
+
+  try {
+    const response = await apiClient.get(url, { params });
+    return response.data;
+  } catch (error) {
+    const axiosError = error as AxiosError;
+    console.error("[Task Service] 개발 시작 명령어 조회 실패:", axiosError);
     throw axiosError;
   }
 }
