@@ -1,27 +1,20 @@
 import axios from "axios";
 
-// API 기본 URL 설정 (환경 변수에서 가져오기)
-// 로컬 개발 환경에서는 Vite proxy를 사용하도록 빈 문자열 또는 상대 경로 사용
-// 프로덕션에서는 전체 URL 사용
-const isDev = import.meta.env.DEV || import.meta.env.MODE === "development";
+// axios 전역 설정: 모든 요청에 쿠키 포함
+axios.defaults.withCredentials = true;
 
-// 로컬 개발 환경에서는 항상 빈 문자열 사용 (Vite proxy 사용)
-// 프로덕션 환경에서만 VITE_API_BASE_URL 환경 변수 사용
-const API_BASE_URL = isDev
-  ? ""
-  : import.meta.env.VITE_API_BASE_URL || "http://34.61.144.150:8000";
+// API 기본 URL 설정
+const API_BASE_URL = "http://34.61.144.150:8000";
 
 // axios 인스턴스 생성
 // 쿠키 기반 인증 사용 (백엔드가 쿠키로 토큰을 전달)
-// 로컬 개발 환경: Vite proxy 사용, withCredentials: false (proxy가 쿠키를 자동으로 전달)
-// 프로덕션 환경: withCredentials: true (쿠키 직접 전송)
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000, // 10초 타임아웃
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: !isDev, // 개발 환경에서는 false (proxy 사용), 프로덕션에서는 true
+  withCredentials: true, // 쿠키 직접 전송
 });
 
 // 요청 인터셉터 (필요시 토큰 추가 등)
@@ -36,6 +29,19 @@ apiClient.interceptors.request.use(
       // 토큰이 있으면 Authorization 헤더도 추가 (하위 호환성)
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // 쿠키 설정 확인 로그
+    console.log("🍪 [API Client] 요청 설정:", {
+      url: config.url,
+      method: config.method,
+      withCredentials: config.withCredentials,
+      hasToken: !!token,
+      headers: {
+        Authorization: config.headers.Authorization ? "Bearer ***" : "없음",
+        "Content-Type": config.headers["Content-Type"],
+      },
+    });
+    
     return config;
   },
   (error) => {
@@ -59,6 +65,18 @@ apiClient.interceptors.response.use(
       const token =
         localStorage.getItem("token") || localStorage.getItem("accessToken");
 
+      // 토큰 갱신 API 자체가 401을 반환한 경우 무한 루프 방지
+      const isRefreshRequest = originalRequest.url?.includes("/auth/refresh");
+      if (isRefreshRequest) {
+        console.error("[API Client] 토큰 갱신 API가 401을 반환했습니다. 로그인이 필요합니다.");
+        // 토큰 갱신 실패 시 로그아웃 처리
+        localStorage.removeItem("token");
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("isLoggedIn");
+        return Promise.reject(error);
+      }
+
       // 401 또는 403 에러이고 refreshToken이 있으면 토큰 갱신 시도
       if (
         (error.response?.status === 401 || error.response?.status === 403) &&
@@ -80,6 +98,11 @@ apiClient.interceptors.response.use(
           return apiClient(originalRequest);
         } catch (refreshError) {
           console.error("[API Client] 토큰 갱신 실패:", refreshError);
+          // 토큰 갱신 실패 시 로그아웃 처리
+          localStorage.removeItem("token");
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+          localStorage.removeItem("isLoggedIn");
           // 토큰 갱신 실패 시 에러만 반환 (리다이렉트는 각 컴포넌트에서 처리)
           // Chat API 같은 경우 리다이렉트하지 않고 에러 메시지만 표시해야 함
           return Promise.reject(refreshError);

@@ -84,6 +84,8 @@ const documentSetting2Route = createRoute({
     featureCount?: string;
     aiModel?: string;
     techStack?: string;
+    chatSessionId?: string;
+    projectId?: string;
   } => ({
     projectName: search.projectName as string | undefined,
     mainColor: search.mainColor as string | undefined,
@@ -91,6 +93,8 @@ const documentSetting2Route = createRoute({
     featureCount: search.featureCount as string | undefined,
     aiModel: search.aiModel as string | undefined,
     techStack: search.techStack as string | undefined,
+    chatSessionId: search.chatSessionId as string | undefined,
+    projectId: search.projectId as string | undefined,
   }),
   component: () => (
     <Suspense fallback={<div className="p-6"> 로딩중...</div>}>

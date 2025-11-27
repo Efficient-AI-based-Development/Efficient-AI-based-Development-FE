@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { ArrowUp } from "lucide-react";
+import { sendMessage, getStream, getChatDocuments } from "@/pages/task/services/chatService";
 
 interface Message {
   id: string;
@@ -17,40 +18,39 @@ export default function SettingPage2() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const hasInitializedRef = useRef(false);
+  const streamAbortControllerRef = useRef<AbortController | null>(null);
 
-  // SettingPage1에서 전달받은 설정 정보를 AI 메시지로 변환
+  // SettingPage1에서 전달받은 정보 확인
   useEffect(() => {
     if (search && !hasInitializedRef.current) {
       hasInitializedRef.current = true;
-      const {
-        projectName,
-        mainColor,
-        pageCount,
-        featureCount,
-        aiModel,
-        techStack,
-      } = search;
+      const { chatSessionId, projectId, projectName, pageCount, featureCount, aiModel, techStack } = search;
 
-      if (projectName || pageCount || featureCount || aiModel || techStack) {
-        const settingsText = `지금까지 알려주신 내용은 다음과 같습니다:
+      // chatSessionId 확인
+      if (!chatSessionId) {
+        console.error("❌ [SettingPage2] chatSessionId가 없습니다.");
+        window.alert("채팅 세션이 없습니다. 처음부터 다시 시작해주세요.");
+        return;
+      }
+
+      // 초기 안내 메시지 표시
+      const settingsText = `지금까지 알려주신 내용은 다음과 같습니다:
 
 1. 프로젝트 이름: ${projectName || "-"}
-2. 메인 컬러: ${mainColor || "-"}
-3. 페이지 수: ${pageCount || "-"}
-4. 구현할 기능 수: ${featureCount || "-"}
-5. AI 모델: ${aiModel || "-"}
-6. 기술 스택: ${techStack ? techStack.split(",").join(", ") : "-"}
+2. 페이지 수: ${pageCount || "-"}
+3. 구현할 기능 수: ${featureCount || "-"}
+4. AI 모델: ${aiModel || "-"}
+5. 기술 스택: ${techStack ? techStack.split(",").join(", ") : "-"}
 
 추가 수정사항이 있다면 말씀해주시고, 수정이 완료되면 다음으로 버튼을 눌러주세요.`;
 
-        const initialMessage: Message = {
-          id: "initial",
-          text: settingsText,
-          sender: "assistant",
-          timestamp: new Date(),
-        };
-        setMessages([initialMessage]);
-      }
+      const initialMessage: Message = {
+        id: "initial",
+        text: settingsText,
+        sender: "assistant",
+        timestamp: new Date(),
+      };
+      setMessages([initialMessage]);
     }
   }, [search]);
 
@@ -67,7 +67,15 @@ export default function SettingPage2() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || isSubmitting) return;
+    const { chatSessionId } = search;
+    
+    if (!message.trim() || isSubmitting || !chatSessionId) {
+      if (!chatSessionId) {
+        console.error("❌ [SettingPage2] chatSessionId가 없습니다.");
+        window.alert("채팅 세션이 없습니다. 처음부터 다시 시작해주세요.");
+      }
+      return;
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -77,20 +85,163 @@ export default function SettingPage2() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    const currentMessage = message;
     setMessage("");
     setIsSubmitting(true);
 
-    //AI 응답
-    setTimeout(() => {
+    try {
+      const chatSessionIdStr = chatSessionId as string;
+      
+      // ① Assistant 메시지 생성 (스트리밍으로 업데이트될 예정)
+      let assistantMessageText = "";
+      const assistantMessageId = (Date.now() + 1).toString();
       const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: "수정 요청을 반영하여 PRD를 업데이트하겠습니다. 추가로 수정이 필요한 부분이 있으시면 말씀해 주세요.",
+        id: assistantMessageId,
+        text: "",
         sender: "assistant",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, assistantMessage]);
+
+      // ② 먼저 메시지 전송 (백엔드가 메시지를 받아야 작업 시작)
+      console.log("💬 [SettingPage2] 메시지 전송 시작");
+      await sendMessage(chatSessionIdStr, {
+        content_md: currentMessage,
+      });
+      console.log("✅ [SettingPage2] 메시지 전송 완료");
+
+      // ③ 그 다음 SSE 스트리밍 시작 (await 없이 비동기 실행)
+      console.log("💬 [SettingPage2] SSE 스트리밍 연결 시작, chatSessionId:", chatSessionIdStr);
+      getStream(
+        chatSessionIdStr,
+        (data) => {
+          console.log("📥 [SettingPage2] onMessage 호출됨, data:", data);
+          
+          // 빈 메시지 무시
+          if (!data || data.trim() === "") {
+            console.log("⚠️ [SettingPage2] 빈 메시지 무시");
+            return;
+          }
+
+          // 종료 이벤트 처리 (다양한 종료 신호 감지)
+          const lowerData = data.toLowerCase();
+          if (
+            data === "[DONE]" ||
+            data.trim() === "[DONE]" ||
+            lowerData.includes("done") ||
+            lowerData.includes("end") ||
+            lowerData.includes("finish") ||
+            lowerData.includes("[end]") ||
+            lowerData.includes("[finish]")
+          ) {
+            console.log("✅ [SettingPage2] 스트리밍 종료 이벤트 수신:", data);
+            // 종료 신호는 onComplete에서 처리하므로 여기서는 무시
+            return;
+          }
+
+          // JSON 파싱 시도
+          let parsed;
+          try {
+            parsed = JSON.parse(data);
+            console.log("✅ [SettingPage2] JSON 파싱 성공:", parsed);
+          } catch (e) {
+            // JSON 파싱 실패 시 무시 (점, 공백 등 keep-alive chunk)
+            console.warn("⚠️ [SettingPage2] 파싱 실패한 chunk (무시):", data, e);
+            return;
+          }
+
+          // 본문 텍스트가 있는 chunk만 UI에 반영
+          let text = "";
+
+          // message가 문자열이면 그대로
+          if (typeof parsed.message === "string") {
+            text = parsed.message;
+          }
+          // message가 객체면 → JSON 문자열로 변환
+          else if (typeof parsed.message === "object" && parsed.message !== null) {
+            text = JSON.stringify(parsed.message, null, 2);
+          }
+          // content가 문자열이면
+          else if (typeof parsed.content === "string") {
+            text = parsed.content;
+          }
+          // title이 문자열이면
+          else if (typeof parsed.title === "string") {
+            text = parsed.title;
+          }
+          // fallback: 전체를 문자열로 변환
+          else {
+            text = JSON.stringify(parsed);
+          }
+          
+          if (typeof text === "string" && text.trim() !== "") {
+            assistantMessageText += text;
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === assistantMessageId
+                  ? { ...msg, text: assistantMessageText }
+                  : msg
+              )
+            );
+          }
+          
+        },
+        (error) => {
+          console.error("❌ [SettingPage2] 스트리밍 에러:", error);
+          setIsSubmitting(false);
+        },
+        async () => {
+          console.log("✅ [SettingPage2] 스트리밍 완료, 문서 조회 시작");
+          setIsSubmitting(false);
+          
+          // SSE 종료 후 문서 조회
+          try {
+            const documents = await getChatDocuments(chatSessionIdStr);
+            console.log("✅ [SettingPage2] 문서 조회 성공:", documents);
+            
+            // 문서를 메시지로 표시
+            if (documents.prd || documents.user_story || documents.srs) {
+              const documentsText = `문서 생성이 완료되었습니다.
+
+## PRD (Product Requirements Document)
+${documents.prd || "-"}
+
+## User Story
+${documents.user_story || "-"}
+
+## SRS (Software Requirements Specification)
+${documents.srs || "-"}
+
+추가 수정사항이 있다면 말씀해주시고, 수정이 완료되면 다음으로 버튼을 눌러주세요.`;
+
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === assistantMessageId
+                    ? { ...msg, text: assistantMessageText + "\n\n" + documentsText }
+                    : msg
+                )
+              );
+            }
+          } catch (error) {
+            console.error("❌ [SettingPage2] 문서 조회 실패:", error);
+            // 문서 조회 실패해도 스트리밍 메시지는 유지
+          }
+        }
+      );
+      console.log("✅ [SettingPage2] SSE 연결 시작됨 (비동기 실행 중)");
+    } catch (error) {
+      console.error("❌ [SettingPage2] 메시지 전송 실패:", error);
       setIsSubmitting(false);
-    }, 1000);
+      
+      // 에러 메시지 표시
+      const errorMessage: Message = {
+        id: (Date.now() + 2).toString(),
+        text: "메시지 전송에 실패했습니다. 다시 시도해주세요.",
+        sender: "assistant",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    }
   };
 
   const handleConfirm = () => {

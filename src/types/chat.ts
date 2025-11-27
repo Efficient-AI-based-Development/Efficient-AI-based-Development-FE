@@ -5,9 +5,18 @@
 export type ChatFileType = "PROJECT";
 
 export interface StartChatRequest {
-  content_md: string;
   file_type: ChatFileType;
-  project_id: number;
+  project_id?: number; // 선택적 (chatService에서 -1로 설정)
+  content?: string | Record<string, any>; // 문자열 또는 객체 (chatService에서 문자열로 변환)
+  project?: {
+    project_name: string;
+    main_color: string;
+    page_count: number;
+    feature_count: number;
+    ai_model: string;
+    tech_stack: string[];
+  };
+  content_md?: string;
 }
 
 export interface StartChatResponse {
@@ -46,4 +55,10 @@ export interface UpdateAllDocFileRequest {
 export interface UpdateAllDocFileResponse {
   ok: boolean;
   project_id: number;
+}
+
+export interface ChatDocumentsResponse {
+  prd: string;
+  user_story: string;
+  srs: string;
 }

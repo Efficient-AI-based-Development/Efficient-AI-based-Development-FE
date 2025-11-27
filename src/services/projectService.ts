@@ -31,6 +31,39 @@ function logAxiosError(context: string, error: unknown) {
   }
 }
 
+export interface CreateProjectRequest {
+  title: string;
+  service_color: string;
+  page_size: number;
+  func_cnt: number;
+  AI_model: string;
+  tech_stack: string;
+}
+
+export interface Project {
+  id: number;
+  project_idx: string;
+  title: string;
+  content_md: string;
+  content_md_json: Record<string, any>;
+  status: string;
+  owner_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function createProject(
+  request: CreateProjectRequest,
+): Promise<Project> {
+  try {
+    const response = await apiClient.post<Project>(BASE_PATH, request);
+    return response.data;
+  } catch (error) {
+    logAxiosError("프로젝트 생성", error);
+    throw error;
+  }
+}
+
 export async function listProjects(
   options: ListProjectsOptions = {},
 ): Promise<ListProjectsResponse> {

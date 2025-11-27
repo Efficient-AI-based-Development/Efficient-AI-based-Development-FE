@@ -46,7 +46,7 @@ export default function AddTaskModal({
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [showOptions, setShowOptions] = useState(false);
   const [canCreateTask, setCanCreateTask] = useState(false);
-  const [chatSessionId, setChatSessionId] = useState<number | null>(null);
+  const [chatSessionId, setChatSessionId] = useState<string | number | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -112,9 +112,9 @@ export default function AddTaskModal({
   const initializeChatSession = async (initialMessage: string) => {
     try {
       const response = await startChatWithInitFile({
-        content_md: initialMessage,
         file_type: "PROJECT",
-        project_id: projectId,
+        project_id: projectId, // 기존 프로젝트 ID 사용
+        content: initialMessage, // content 필드에 메시지 전달
       });
       setChatSessionId(response.chat_id);
       return response.chat_id;
