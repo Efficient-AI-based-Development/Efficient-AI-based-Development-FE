@@ -28,6 +28,17 @@ export async function startChatWithInitFile(
   } catch (error) {
     const axiosError = error as AxiosError;
     console.error("[Chat Service] 채팅 세션 시작 실패:", axiosError);
+
+    // 404 에러인 경우 더 자세한 정보 로깅
+    if (axiosError.response?.status === 404) {
+      console.error(
+        "[Chat Service] API 엔드포인트를 찾을 수 없습니다:",
+        axiosError.config?.url,
+        "BaseURL:",
+        axiosError.config?.baseURL,
+      );
+    }
+
     throw error;
   }
 }
@@ -49,6 +60,17 @@ export async function sendMessage(
   } catch (error) {
     const axiosError = error as AxiosError;
     console.error("[Chat Service] 메시지 전송 실패:", axiosError);
+
+    // 404 에러인 경우 더 자세한 정보 로깅
+    if (axiosError.response?.status === 404) {
+      console.error(
+        "[Chat Service] API 엔드포인트를 찾을 수 없습니다:",
+        axiosError.config?.url,
+        "Chat Session ID:",
+        chatSessionId,
+      );
+    }
+
     throw error;
   }
 }

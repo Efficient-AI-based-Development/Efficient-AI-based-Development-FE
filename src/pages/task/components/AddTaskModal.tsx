@@ -119,6 +119,22 @@ export default function AddTaskModal({
       setChatSessionId(response.chat_id);
       return response.chat_id;
     } catch (error) {
+      const axiosError = error as {
+        response?: { status?: number; data?: { detail?: string } };
+        message?: string;
+      };
+
+      // 404 에러인 경우 더 명확한 메시지 표시
+      if (axiosError.response?.status === 404) {
+        console.error(
+          "채팅 세션 시작 실패: API 엔드포인트를 찾을 수 없습니다 (404)",
+          error,
+        );
+        throw new Error(
+          "채팅 API 엔드포인트를 찾을 수 없습니다. 서버 설정을 확인해주세요.",
+        );
+      }
+
       console.error("채팅 세션 시작 실패:", error);
       throw error;
     }
@@ -167,8 +183,39 @@ export default function AddTaskModal({
 
       // 첫 메시지인 경우 세션 시작
       if (sessionId === null) {
-        sessionId = await initializeChatSession(currentInput);
-        setChatSessionId(sessionId); // 세션 ID 저장
+        try {
+          sessionId = await initializeChatSession(currentInput);
+          setChatSessionId(sessionId); // 세션 ID 저장
+        } catch (sessionError) {
+          // 세션 생성 실패 시 에러 메시지 표시하고 종료
+          const sessionAxiosError = sessionError as {
+            response?: { status?: number; data?: { detail?: string } };
+            message?: string;
+          };
+
+          let sessionErrorContent = "채팅 세션을 시작할 수 없습니다.";
+
+          if (sessionAxiosError.response?.status === 404) {
+            sessionErrorContent =
+              "채팅 API 엔드포인트를 찾을 수 없습니다 (404).\n\n가능한 원인:\n- 서버가 실행 중이 아닐 수 있습니다\n- API 엔드포인트 경로가 변경되었을 수 있습니다\n- 네트워크 연결을 확인해주세요";
+          } else if (
+            sessionAxiosError.response?.status === 401 ||
+            sessionAxiosError.response?.status === 403
+          ) {
+            sessionErrorContent =
+              "인증이 필요합니다. 페이지를 새로고침하거나 다시 로그인해주세요.";
+          } else if (sessionAxiosError.message) {
+            sessionErrorContent = `세션 생성 실패: ${sessionAxiosError.message}`;
+          }
+
+          const errorMessage = {
+            role: "assistant" as const,
+            content: sessionErrorContent,
+          };
+          setMessages((prev) => [...prev, errorMessage]);
+          setIsSending(false);
+          return; // 세션 생성 실패 시 여기서 종료
+        }
       } else {
         // 기존 세션에 메시지 전송
         await sendMessage(sessionId, {
@@ -256,7 +303,10 @@ export default function AddTaskModal({
       let errorContent =
         "죄송합니다. 일시적인 오류가 발생했습니다. 다시 시도해주세요.";
 
-      if (axiosError.response?.status === 403) {
+      if (axiosError.response?.status === 404) {
+        errorContent =
+          "채팅 API 엔드포인트를 찾을 수 없습니다 (404).\n\n가능한 원인:\n- 서버가 실행 중이 아닐 수 있습니다\n- API 엔드포인트 경로가 변경되었을 수 있습니다\n- 네트워크 연결을 확인해주세요";
+      } else if (axiosError.response?.status === 403) {
         const detail = axiosError.response?.data?.detail;
         if (detail === "Not authenticated" || !token) {
           if (devMode) {
