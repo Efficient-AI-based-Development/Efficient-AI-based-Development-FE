@@ -16,10 +16,15 @@ function logAxiosError(context: string, error: unknown) {
 
   if (axiosError.response) {
     console.error("[ProjectService] 응답 Status:", axiosError.response.status);
-    console.error("[ProjectService] 응답 Data:", axiosError.response.data);
     console.error(
-      "[ProjectService] 응답 Headers:",
-      axiosError.response.headers,
+      "[ProjectService] 응답 Data (상세):",
+      JSON.stringify(axiosError.response.data, null, 2),
+    );
+    console.error(
+      "[ProjectService] 요청 URL:",
+      axiosError.config?.url,
+      "파라미터:",
+      axiosError.config?.params,
     );
   } else if (axiosError.request) {
     console.error(
@@ -75,8 +80,11 @@ export async function listProjects(
   if (typeof options.page === "number") {
     params.page = options.page;
   }
-  if (typeof options.pageSize === "number") {
+  // 백엔드가 page_size를 기대할 수 있으므로 둘 다 시도
+  // 백엔드 최소값 요구사항: 10 이상
+  if (typeof options.pageSize === "number" && options.pageSize >= 10) {
     params.pageSize = options.pageSize;
+    params.page_size = options.pageSize; // 백엔드가 snake_case를 기대할 수 있음
   }
 
   try {

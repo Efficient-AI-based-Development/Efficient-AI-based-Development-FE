@@ -179,10 +179,21 @@ export default function GuidePage() {
             </div>
           )}
 
-          <div className="mt-8 text-base text-gray-600 text-center">
-            <p>
-              위 명령어를 터미널에서 순서대로 실행한 후, 완료 버튼을 클릭하세요.
+          <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-blue-900 mb-3">
+              💡 간단한 방법
+            </h3>
+            <p className="text-sm text-blue-800 mb-4">
+              위 명령어 대신, <strong>MCP 연동 페이지</strong>에서 "설정 파일
+              다운로드" 버튼을 클릭하면 자동으로 토큰이 포함된 설정 파일이
+              생성됩니다. 복사-붙여넣기만 하면 됩니다!
             </p>
+            <ol className="list-decimal list-inside space-y-2 text-sm text-blue-800">
+              <li>MCP 연동 페이지에서 "설정 파일 다운로드" 클릭</li>
+              <li>생성된 mcp.json 내용 복사</li>
+              <li>Cursor 설정 파일에 붙여넣기</li>
+              <li>Cursor 재시작</li>
+            </ol>
           </div>
         </div>
       </div>

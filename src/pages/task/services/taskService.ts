@@ -15,11 +15,11 @@ import type { AxiosError } from "axios";
 
 /**
  * TaskType을 API 타입으로 변환
- * DEV → "feat", DESIGN → "design", DOCS → "docs"
+ * DEV → "dev", DESIGN → "design", DOCS → "docs"
  */
 export function mapTaskTypeToApiType(taskType: TaskType): ApiTaskType {
   const mapping: Record<TaskType, ApiTaskType> = {
-    DEV: "feat",
+    DEV: "dev",
     DESIGN: "design",
     DOCS: "docs",
   };
@@ -28,11 +28,11 @@ export function mapTaskTypeToApiType(taskType: TaskType): ApiTaskType {
 
 /**
  * API 타입을 TaskType으로 변환
- * "feat" → DEV, "design" → DESIGN, "docs" → DOCS
+ * "dev" → DEV, "design" → DESIGN, "docs" → DOCS
  */
 export function mapApiTypeToTaskType(apiType: ApiTaskType): TaskType {
   const mapping: Record<ApiTaskType, TaskType> = {
-    feat: "DEV",
+    dev: "DEV",
     design: "DESIGN",
     docs: "DOCS",
   };
@@ -117,24 +117,17 @@ export async function createTask(
 /**
  * 태스크 목록 조회 API 호출
  * GET /api/v1/projects/{project_id}/tasks
+ * 페이지네이션 없이 전체 반환
  */
 export async function getTasks(
   projectId: number,
   options?: {
     q?: string;
-    page?: number;
-    page_size?: number;
   },
 ): Promise<ListTasksResponse> {
   const params = new URLSearchParams();
   if (options?.q) {
     params.append("q", options.q);
-  }
-  if (options?.page) {
-    params.append("page", String(options.page));
-  }
-  if (options?.page_size) {
-    params.append("page_size", String(options.page_size));
   }
 
   const queryString = params.toString();
@@ -225,6 +218,110 @@ export async function deleteTask(taskId: number): Promise<void> {
     return;
   } catch (error) {
     const axiosError = error as AxiosError;
+    throw axiosError;
+  }
+}
+
+/**
+ * 태스크 인사이트 조회 API 호출
+ * GET /api/v1/tasks/insights
+ */
+export async function getTaskInsights(): Promise<unknown> {
+  const url = `/api/v1/tasks/insights`;
+
+  try {
+    const response = await apiClient.get(url);
+    return response.data;
+  } catch (error) {
+    const axiosError = error as AxiosError;
+    console.error("[Task Service] 태스크 인사이트 조회 실패:", axiosError);
+    throw axiosError;
+  }
+}
+
+/**
+ * 개발 시작 API 호출
+ * POST /api/v1/tasks/{task_id}/start-development
+ * runId/sessionId 반환
+ */
+export async function startDevelopment(
+  taskId: number,
+  data?: {
+    provider_id?: "chatgpt" | "claude" | "cursor";
+    options?: {
+      mode?: string;
+      temperature?: number;
+    };
+  },
+): Promise<{
+  runId: string;
+  sessionId: string;
+  status?: string;
+  preview?: string;
+  summary?: string | null;
+}> {
+  const url = `/api/v1/tasks/${taskId}/start-development`;
+
+  try {
+    const response = await apiClient.post(url, data || {});
+    // API 응답에서 runId/sessionId 추출 (응답 형식에 따라 조정 필요)
+    const responseData = response.data?.data || response.data;
+    return {
+      runId:
+        responseData.runId ||
+        responseData.run_id ||
+        responseData.data?.runId ||
+        responseData.data?.run_id ||
+        "",
+      sessionId:
+        responseData.sessionId ||
+        responseData.session_id ||
+        responseData.data?.sessionId ||
+        responseData.data?.session_id ||
+        "",
+      status: responseData.status || responseData.data?.status,
+      preview: responseData.preview || responseData.data?.preview,
+      summary: responseData.summary || responseData.data?.summary,
+    };
+  } catch (error) {
+    const axiosError = error as AxiosError;
+    console.error("[Task Service] 개발 시작 실패:", axiosError);
+    throw axiosError;
+  }
+}
+
+/**
+ * 개발 시작 명령어 조회 API 호출
+ * GET /api/v1/tasks/{task_id}/start-development/command
+ * 터미널에 붙여넣을 curl 명령어 제공
+ */
+export async function getStartDevelopmentCommand(
+  taskId: number,
+  providerId?: string,
+): Promise<{
+  command: string; // curl 명령어
+  taskId: number;
+  taskTitle?: string;
+  description?: string;
+  note?: string;
+}> {
+  const url = `/api/v1/tasks/${taskId}/start-development/command`;
+  const params = providerId ? { provider_id: providerId } : {};
+
+  try {
+    const response = await apiClient.get(url, { params });
+    // API 응답 형식에 따라 조정
+    const responseData = response.data?.data || response.data;
+    return {
+      command: responseData.command || responseData.curl || "",
+      taskId: responseData.taskId || responseData.task_id || taskId,
+      taskTitle: responseData.taskTitle || responseData.task_title,
+      description: responseData.description,
+      note: responseData.note || responseData.description,
+    };
+  } catch (error) {
+    const axiosError = error as AxiosError;
+    console.error("[Task Service] 개발 시작 명령어 조회 실패:", axiosError);
     throw axiosError;
   }
 }
