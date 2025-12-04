@@ -177,6 +177,18 @@ export default function TaskPage() {
       // 성공 시 태스크 목록에 추가
       setTasks((prevTasks) => [...prevTasks, newTask]);
       setIsModalOpen(false);
+
+      // MCP 설정 파일 생성 (백그라운드에서 처리, 실패해도 무시)
+      try {
+        const { getProjectConfigFile } = await import(
+          "../mcp/services/mcpService"
+        );
+        await getProjectConfigFile(PROJECT_ID);
+        // 파일 생성은 백엔드에서 처리되므로 여기서는 호출만 함
+      } catch (mcpError) {
+        // MCP 설정 파일 생성 실패는 무시 (태스크 생성은 성공했으므로)
+        console.warn("[TaskPage] MCP 설정 파일 생성 실패 (무시됨):", mcpError);
+      }
     } catch (error) {
       // 에러 발생 시 다시 불러오기
       try {

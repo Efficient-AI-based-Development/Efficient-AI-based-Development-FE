@@ -171,6 +171,21 @@ export async function createChatSession(
     console.error("🔥 [Chat Service] createChatSession 실패:", error);
     console.error("🔥 [Chat Service Catch] error.response:", error?.response);
     console.error("🔥 [Chat Service Catch] detail:", error?.response?.data?.detail);
+
+  } catch (error) {
+    const axiosError = error as AxiosError;
+    console.error("[Chat Service] 채팅 세션 시작 실패:", axiosError);
+
+    // 404 에러인 경우 더 자세한 정보 로깅
+    if (axiosError.response?.status === 404) {
+      console.error(
+        "[Chat Service] API 엔드포인트를 찾을 수 없습니다:",
+        axiosError.config?.url,
+        "BaseURL:",
+        axiosError.config?.baseURL,
+      );
+    }
+
     throw error;
   }
 }
@@ -192,6 +207,17 @@ export async function sendMessage(
   } catch (error) {
     const axiosError = error as AxiosError;
     console.error("[Chat Service] 메시지 전송 실패:", axiosError);
+
+    // 404 에러인 경우 더 자세한 정보 로깅
+    if (axiosError.response?.status === 404) {
+      console.error(
+        "[Chat Service] API 엔드포인트를 찾을 수 없습니다:",
+        axiosError.config?.url,
+        "Chat Session ID:",
+        chatSessionId,
+      );
+    }
+
     throw error;
   }
 }
@@ -206,6 +232,7 @@ export async function getStream(
   onMessage: (data: string) => void,
   onError?: (error: Error) => void,
   onComplete?: () => void,
+  signal?: AbortSignal,
 ): Promise<void> {
 
   // 1) 백엔드 URL
@@ -221,8 +248,20 @@ export async function getStream(
     return;
   }
 
+
   // 3) SSE URL 생성
   const url = `${BACKEND_URL}/api/v1/chats/${chatSessionId}/stream?token=${accessToken}`;
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers,
+      credentials: isDev ? "same-origin" : "include", // 로컬 개발 환경에서는 same-origin (proxy 사용)
+      signal, // AbortSignal 전달
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
   return new Promise((resolve, reject) => {
     try {
@@ -299,6 +338,26 @@ export async function getStream(
       console.error("❌ EventSource 생성 실패:", error);
       onError?.(error);
       reject(error);
+
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const data = line.slice(6);
+          if (data.trim()) {
+            onMessage(data);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    // AbortError는 정상적인 취소이므로 에러로 처리하지 않음
+    if (error instanceof Error && error.name === "AbortError") {
+      return; // 조용히 종료
+    }
+
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error("[Chat Service] 스트리밍 실패:", err);
+    onError?.(err);
+    throw err;
   }
   });
 }

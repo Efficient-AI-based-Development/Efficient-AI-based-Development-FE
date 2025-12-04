@@ -61,7 +61,7 @@ export default function MyProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [meta, setMeta] = useState<ListProjectsResponse["meta"]>({
     page: 1,
-    page_size: 9,
+    page_size: 10,
     total: 0,
   });
   const [page, setPage] = useState(1);
@@ -73,7 +73,7 @@ export default function MyProjectsPage() {
   >(null);
   const router = useRouter();
   const { toast } = useToast();
-  const PAGE_SIZE = 9;
+  const PAGE_SIZE = 10; // 백엔드 최소값 요구사항: 10 이상
   const devModeEnabled = useMemo(
     () =>
       typeof window !== "undefined"

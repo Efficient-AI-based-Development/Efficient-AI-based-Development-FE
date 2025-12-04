@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import MDEditor from "@uiw/react-md-editor";
-import { Trash2, Files, FileCheck, Clock } from "lucide-react";
+import { Trash2, Files, FileCheck, Clock, Copy } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,10 +11,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import TaskTagAndPrioritySelector from "../TaskTagAndPrioritySelector";
 import ReviewActionButtons from "./ReviewActionButtons";
 import { markdownComponents } from "./markdownComponents";
 import type { Task, TaskType } from "../../../../types/task";
+import { getTaskCommand } from "../../../mcp/services/mcpService";
 
 interface TaskDetailViewProps {
   task: Task;
@@ -39,6 +41,7 @@ export default function TaskDetailView({
   onApprove,
   onAddMore,
 }: TaskDetailViewProps) {
+  const { toast } = useToast();
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedContent, setEditedContent] = useState(task.content || "");
   const [showPreview, setShowPreview] = useState(false);
@@ -46,6 +49,7 @@ export default function TaskDetailView({
   const [priority, setPriority] = useState<number>(task.priority);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [activeTab, setActiveTab] = useState<"command" | "logs">("command");
+  const [isCopyingCommand, setIsCopyingCommand] = useState(false);
 
   // task가 변경될 때 state 업데이트
   useEffect(() => {
@@ -104,6 +108,39 @@ export default function TaskDetailView({
       return remainingMinutes > 0
         ? `${hours}시간 ${remainingMinutes}분`
         : `${hours}시간`;
+    }
+  };
+
+  // 명령어 복사 핸들러
+  const handleCopyCommand = async () => {
+    try {
+      setIsCopyingCommand(true);
+      const taskId = Number(task.id);
+      if (isNaN(taskId)) {
+        toast({
+          title: "태스크 ID가 유효하지 않습니다.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const result = await getTaskCommand(taskId, { providerId: "cursor" });
+      await navigator.clipboard.writeText(result.command);
+
+      toast({
+        title: "명령어가 복사되었습니다!",
+        description:
+          result.description || "Cursor의 MCP 채팅창에 붙여넣으세요.",
+        duration: 5000,
+      });
+    } catch (error) {
+      console.error("[TaskDetailView] 명령어 복사 실패:", error);
+      toast({
+        title: "명령어 복사에 실패했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCopyingCommand(false);
     }
   };
 
@@ -301,6 +338,15 @@ export default function TaskDetailView({
                   삭제
                 </Button>
               )}
+              <Button
+                onClick={handleCopyCommand}
+                disabled={isCopyingCommand}
+                variant="outline"
+                className="px-6 outline-none focus:outline-none focus-visible:outline-none"
+              >
+                <Copy className="w-4 h-4 mr-2" />
+                {isCopyingCommand ? "복사 중..." : "명령어 복사"}
+              </Button>
             </div>
             <div className="flex gap-3">
               <Button
