@@ -1,12 +1,55 @@
+import { useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 
 export default function HomePage() {
   const navigate = useNavigate();
 
+  // 로그인 상태 확인
+  useEffect(() => {
+    const checkLoginStatus = () => {
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("accessToken");
+      const isLoggedIn = localStorage.getItem("isLoggedIn");
+      const loggedIn = !!token || isLoggedIn === "true";
+
+      if (loggedIn) {
+        // 로그인되어 있으면 바로 setting1로 이동
+        navigate({
+          to: "/document/setting1",
+        });
+      }
+    };
+
+    checkLoginStatus();
+
+    // storage 이벤트 리스너 추가 (다른 탭에서 로그인한 경우)
+    window.addEventListener("storage", checkLoginStatus);
+    window.addEventListener("loginStatusChanged", checkLoginStatus);
+
+    return () => {
+      window.removeEventListener("storage", checkLoginStatus);
+      window.removeEventListener("loginStatusChanged", checkLoginStatus);
+    };
+  }, [navigate]);
+
   const handleCardClick = () => {
+    // 로그인 상태 확인
+    const token =
+      localStorage.getItem("token") || localStorage.getItem("accessToken");
+    const isLoggedIn = localStorage.getItem("isLoggedIn");
+    const loggedIn = !!token || isLoggedIn === "true";
+
+    if (loggedIn) {
+      // 로그인되어 있으면 바로 setting1로 이동
     navigate({
-      to: "/login",
+      to: "/document/setting1",
     });
+    } else {
+      // 로그인되어 있지 않으면 로그인 페이지로 이동
+      navigate({
+        to: "/login",
+      });
+    }
   };
 
   return (

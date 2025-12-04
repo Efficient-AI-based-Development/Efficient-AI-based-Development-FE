@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { ArrowUp } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { mockData } from "./mocks/mockData";
+import { sendMessage, getStream } from "@/pages/task/services/chatService";
 import { markdownComponents } from "@/pages/task/components/TaskDetailModal/markdownComponents";
 
 interface Message {
@@ -15,15 +15,70 @@ interface Message {
 
 export default function SettingPage3() {
   const navigate = useNavigate();
+  const search = useSearch({ from: "/document/setting3" });
+
+  // ★ Setting2에서 넘어오는 값: chatSessionId, projectId
+  const { chatSessionId, projectId } = search || {};
+
   const [activeTab, setActiveTab] = useState<"PRD" | "UserStory" | "SRS">("PRD");
-  const [message, setMessage] = useState("");
+
+  // ★ fileType state (탭에 따라 자동 동기화)
+  const [fileType, setFileType] = useState<"PRD" | "UserStory" | "SRS">("PRD");
+
+  // 🟪 State 구조 (최종)
   const [messages, setMessages] = useState<Message[]>([]);
+  const [documents, setDocuments] = useState({
+    prd: "",
+    user_story: "",
+    srs: "",
+  });
+
+  const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
+  // chatSessionId와 projectId 검증
+  useEffect(() => {
+    if (!chatSessionId) {
+      console.error("❌ [SettingPage3] chatSessionId가 없습니다.");
+      window.alert("채팅 세션이 없습니다. 처음부터 다시 시작해주세요.");
+      navigate({ to: "/document/setting1" });
+      return;
+    }
+    if (!projectId) {
+      console.error("❌ [SettingPage3] projectId가 없습니다.");
+      window.alert("프로젝트 ID가 없습니다. 처음부터 다시 시작해주세요.");
+      navigate({ to: "/document/setting1" });
+      return;
+    }
+    console.log("✅ [SettingPage3] 초기화 완료 - chatSessionId:", chatSessionId, "projectId:", projectId);
+  }, [chatSessionId, projectId, navigate]);
+
+  // 🟨 탭에 따라 화면에 표시할 문서만 바꿔줌
+  const getCurrentDocument = () => {
+    if (activeTab === "PRD") return documents.prd;
+    if (activeTab === "UserStory") return documents.user_story;
+    if (activeTab === "SRS") return documents.srs;
+    return "";
+  };
+
+  // 탭 이름을 백엔드 파일 타입으로 변환
+  const getFileTypeForBackend = (tab: "PRD" | "UserStory" | "SRS"): "PRD" | "USER_STORY" | "SRS" => {
+    if (tab === "PRD") return "PRD";
+    if (tab === "UserStory") return "USER_STORY";
+    if (tab === "SRS") return "SRS";
+    return "PRD"; // 기본값
+  };
+
+  // 🟩 메시지 전송
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || isSubmitting) return;
+
+    if (!chatSessionId || !projectId) {
+      window.alert("채팅 세션이 없습니다. 다시 시도해주세요.");
+      return;
+    }
+    if (!message.trim()) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -33,25 +88,138 @@ export default function SettingPage3() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+
+    const currentMessage = message;
     setMessage("");
     setIsSubmitting(true);
 
-    // AI 응답 시뮬레이션 
-    setTimeout(() => {
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: `${activeTab}에 대한 수정 요청을 반영하여 업데이트하겠습니다. 추가로 수정이 필요한 부분이 있으시면 말씀해 주세요.`,
+    try {
+      const projectIdNum = Number(projectId);
+      if (isNaN(projectIdNum)) {
+        throw new Error("유효하지 않은 projectId입니다.");
+      }
+
+      // assistant 메시지 placeholder 생성
+      let assistantText = "";
+      const assistantId = (Date.now() + 1).toString();
+
+      setMessages((prev) => [
+        ...prev,
+        { id: assistantId, text: "", sender: "assistant", timestamp: new Date() },
+      ]);
+
+      // ① 메시지 전송 (현재 탭에 따라 파일 타입 결정)
+      const backendFileType = getFileTypeForBackend(activeTab);
+      console.log("💬 [SettingPage3] 메시지 전송 시작 - 파일 타입:", backendFileType);
+      await sendMessage(chatSessionId, {
+        content_md: currentMessage,
+        project_id: projectIdNum,
+        file_type: backendFileType, // 현재 탭에 따라 PRD, USER_STORY, SRS
+      });
+      console.log("✅ [SettingPage3] 메시지 전송 완료");
+
+      // ② SSE 연결 (await 없이 비동기 실행)
+      console.log("💬 [SettingPage3] SSE 스트리밍 연결 시작");
+      getStream(
+        chatSessionId,
+        (chunk) => {
+          console.log("📥 [SettingPage3] SSE chunk 수신:", chunk);
+
+          if (!chunk || chunk.trim() === "") return;
+
+          // 종료 이벤트 처리
+          const lowerChunk = chunk.toLowerCase();
+          if (
+            chunk === "[DONE]" ||
+            chunk.trim() === "[DONE]" ||
+            lowerChunk.includes("done") ||
+            lowerChunk.includes("end") ||
+            lowerChunk.includes("finish")
+          ) {
+            console.log("✅ [SettingPage3] 스트리밍 종료 이벤트 수신");
+            return;
+          }
+
+          // JSON 파싱 시도
+          let parsed;
+          try {
+            parsed = JSON.parse(chunk);
+            console.log("✅ [SettingPage3] JSON 파싱 성공:", parsed);
+          } catch (e) {
+            // JSON 파싱 실패 시 무시 (점, 공백 등 keep-alive chunk)
+            console.warn("⚠️ [SettingPage3] 파싱 실패한 chunk (무시):", chunk);
+            return;
+          }
+
+          // 🟦 SSE에서 내려오는 chunk 처리
+          // 💬 assistant 메시지
+          if (parsed.type === "message") {
+            const text = parsed.text || parsed.message || "";
+            if (text && text.trim() !== "") {
+              assistantText += text;
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantId ? { ...m, text: assistantText } : m
+                )
+              );
+            }
+          }
+          // 📝 문서 업데이트
+          else if (parsed.type === "document") {
+            const fileType = parsed.file_type;
+            const contentMd = parsed.content_md || "";
+
+            if (fileType === "PRD") {
+              setDocuments((d) => ({ ...d, prd: contentMd }));
+              console.log("📝 [SettingPage3] PRD 문서 업데이트");
+            } else if (fileType === "USER_STORY" || fileType === "UserStory") {
+              setDocuments((d) => ({ ...d, user_story: contentMd }));
+              console.log("📝 [SettingPage3] UserStory 문서 업데이트");
+            } else if (fileType === "SRS") {
+              setDocuments((d) => ({ ...d, srs: contentMd }));
+              console.log("📝 [SettingPage3] SRS 문서 업데이트");
+            }
+          }
+          // 기타 이벤트 (assistant, message 등)
+          else if (parsed.content || parsed.message || parsed.text) {
+            const text = parsed.content || parsed.message || parsed.text || "";
+            if (text && text.trim() !== "") {
+              assistantText += text;
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantId ? { ...m, text: assistantText } : m
+                )
+              );
+            }
+          }
+        },
+        (error) => {
+          console.error("❌ [SettingPage3] SSE 오류:", error);
+          setIsSubmitting(false);
+        },
+        () => {
+          console.log("✅ [SettingPage3] SSE 스트리밍 완료");
+          setIsSubmitting(false);
+        }
+      );
+    } catch (err) {
+      console.error("❌ [SettingPage3] 메시지 전송 실패:", err);
+      setIsSubmitting(false);
+
+      // 에러 메시지 표시
+      const errorMessage: Message = {
+        id: (Date.now() + 2).toString(),
+        text: "메시지 전송에 실패했습니다. 다시 시도해주세요.",
         sender: "assistant",
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, assistantMessage]);
-      setIsSubmitting(false);
-    }, 1000);
+      setMessages((prev) => [...prev, errorMessage]);
+    }
   };
 
-  // 메시지가 추가될 때마다 자동 스크롤
+  // 스크롤 자동 이동
   useEffect(() => {
-    if ((messages.length > 0 || isSubmitting) && chatContainerRef.current) {
+    if (chatContainerRef.current) {
       chatContainerRef.current.scrollTo({
         top: chatContainerRef.current.scrollHeight,
         behavior: "smooth",
@@ -59,9 +227,14 @@ export default function SettingPage3() {
     }
   }, [messages, isSubmitting]);
 
+  // 완료 버튼
   const handleComplete = () => {
+    const { projectId } = search || {};
     navigate({ 
       to: "/document/check",
+      search: {
+        projectId: projectId || undefined,
+      },
     });
   };
 
@@ -70,100 +243,86 @@ export default function SettingPage3() {
       <div className="mx-auto mt-4">
         {/* 진행 바 */}
         <div className="flex flex-col gap-4 mb-8">
-          <div className="flex justify-start items-center gap-4">
+          <div className="flex items-center gap-4">
             <button 
               onClick={() => navigate({ to: "/document/setting2" })}
               className="text-gray-400 hover:text-gray-600 text-3xl"
             >
               &lt;
             </button>
+
             <div className="flex flex-col gap-2">
               <div className="text-xl font-semibold text-gray-600">
                 PRD / UserStory / SRS 생성 및 수정
               </div>
-              <div className="h-2 bg-[#D9D9D9] rounded-full overflow-hidden relative w-[500px]">
-                <div
-                  className="h-full bg-[#7871FE] rounded-full transition-all"
-                  style={{ width: "75%" }}
-                />
+
+              <div className="h-2 bg-[#D9D9D9] w-[500px] rounded-full overflow-hidden">
+                <div className="h-full bg-[#7871FE] rounded-full" style={{ width: "75%" }} />
               </div>
             </div>
           </div>
 
-          {/* 탭 버튼 */}
+          {/* 탭 */}
           <div className="flex gap-3 mt-4">
+            {["PRD", "UserStory", "SRS"].map((tab) => (
             <button
-              onClick={() => setActiveTab("PRD")}
-              className={`px-6 py-3 rounded-3xl font-semibold text-base transition-colors ${
-                activeTab === "PRD"
+                key={tab}
+                onClick={() => {
+                  setActiveTab(tab as any);
+                  setFileType(tab as any); // ★ file_type 자동 동기화
+                }}
+                className={`px-6 py-3 rounded-3xl font-semibold ${
+                  activeTab === tab
                   ? "bg-gray-600 text-white"
-                  : "bg-white text-gray-600 border border-gray-300"
+                    : "bg-white border border-gray-300 text-gray-600"
               }`}
             >
-              PRD
+                {tab}
             </button>
-            <button
-              onClick={() => setActiveTab("UserStory")}
-              className={`px-6 py-3 rounded-3xl font-semibold text-base transition-colors ${
-                activeTab === "UserStory"
-                  ? "bg-gray-600 text-white"
-                  : "bg-white text-gray-600 border border-gray-300"
-              }`}
-            >
-              UserStory
-            </button>
-            <button
-              onClick={() => setActiveTab("SRS")}
-              className={`px-6 py-3 rounded-3xl font-semibold text-base transition-colors ${
-                activeTab === "SRS"
-                  ? "bg-gray-600 text-white"
-                  : "bg-white text-gray-600 border border-gray-300"
-              }`}
-            >
-              SRS
-            </button>
+            ))}
           </div>
         </div>
 
-        {/* 메인 콘텐츠 영역 */}
+        {/* 메인 영역 */}
         <div className="flex gap-6 h-[calc(100vh-300px)]">
-          {/* 왼쪽 패널 - 문서 표시 영역 */}
+          {/* 문서 표시 구역 */}
           <div className="flex-1 bg-[#7871FE]/15 rounded-2xl p-8 flex flex-col">
             <div className="flex-1 overflow-y-auto">
-              <div className="text-gray-700">
+              {getCurrentDocument() ? (
                 <div className="prose max-w-none">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={markdownComponents}
-                  >
-                    {mockData[activeTab]}
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                    {getCurrentDocument()}
                   </ReactMarkdown>
                 </div>
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-gray-600">
+                    {activeTab} 문서가 아직 생성되지 않았습니다. 채팅으로 문서를 생성해보세요.
+                  </p>
               </div>
+              )}
             </div>
-            {/* 완료 버튼 - 하단 고정 */}
-            <div className="flex justify-end mt-4 pt-4">
+
+            <div className="flex justify-end mt-4">
               <button 
                 onClick={handleComplete}
-                className="px-6 py-3 rounded-lg bg-gray-600 text-white font-semibold hover:bg-gray-800 transition-colors"
+                className="px-6 py-3 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-800"
               >
                 완료
               </button>
             </div>
           </div>
 
-          {/* 오른쪽 패널 - 채팅 영역 */}
+          {/* 채팅 영역 */}
           <div className="w-[500px] flex flex-col border-2 border-[#7871FE] rounded-2xl bg-white overflow-hidden">
-            {/* 상단 안내 텍스트 - 메시지가 없을 때만 표시 */}
             {messages.length === 0 && (
-              <div className="p-6 flex-shrink-0">
+              <div className="p-6">
                 <p className="text-gray-600 font-medium">
-                  {activeTab}에 대한 수정 요청이 있다면 입력해 주세요.
+                  {fileType} 문서에 대한 수정 요청을 입력해 주세요.
                 </p>
               </div>
             )}
 
-            {/* 채팅 메시지 영역 */}
             <div ref={chatContainerRef} className="flex-1 overflow-y-auto space-y-4 p-4">
               {messages.map((msg) => (
                 <div
@@ -171,36 +330,37 @@ export default function SettingPage3() {
                   className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start ml-4"}`}
                 >
                   <div
-                    className={`max-w-[70%] rounded-2xl px-6 py-4 ${
+                    className={`max-w-[70%] px-6 py-4 rounded-2xl ${
                       msg.sender === "user"
                         ? "bg-[#7871FE] text-white font-semibold"
                         : "bg-[#7871FE]/30 text-gray-900"
                     }`}
                   >
-                    <p className="font-medium text-base leading-relaxed whitespace-pre-line">{msg.text}</p>
+                    <p className="leading-relaxed whitespace-pre-line">{msg.text}</p>
                   </div>
                 </div>
               ))}
+
               {isSubmitting && (
                 <div className="flex justify-start ml-4">
                   <div className="bg-[#7871FE]/30 rounded-2xl p-4">
-                    <p className="text-base text-gray-600">...</p>
+                    <p className="text-gray-600">...</p>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* 하단 입력 필드 */}
-            <div className="p-4 flex-shrink-0">
+            {/* 입력창 */}
+            <div className="p-4">
               <form onSubmit={handleSubmit} className="relative">
                 <textarea
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder={`입력해 주세요…`}
+                  placeholder={`${fileType} 수정 요청을 입력하세요…`}
+                  className="w-full h-[120px] px-6 py-5 bg-[#7871FE]/10 rounded-[18px] 
+                             focus:ring-2 focus:ring-[#7871FE]/40 outline-none
+                             placeholder:text-zinc-400 resize-none pr-16"
                   disabled={isSubmitting}
-                  className="w-full h-[120px] resize-none rounded-[18px] bg-[#7871FE]/10 px-6 py-5 pr-16 text-base leading-relaxed
-                           placeholder:text-zinc-400 placeholder:text-md
-                           focus:outline-none focus:ring-2 focus:ring-[#7871FE]/40 disabled:opacity-50"
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
@@ -208,14 +368,12 @@ export default function SettingPage3() {
                     }
                   }}
                 />
-                {/* 우측 전송 버튼 */}
+
                 <button
                   type="submit"
-                  disabled={isSubmitting || !message.trim()}
-                  aria-label="전송"
-                  className="absolute right-5 bottom-5 inline-flex h-10 w-10 items-center justify-center rounded-full
-                           border border-zinc-200 bg-white shadow-[0_4px_14px_rgba(15,23,42,0.08)]
-                           hover:bg-zinc-50 active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={!message.trim() || isSubmitting}
+                  className="absolute right-5 bottom-5 h-10 w-10 rounded-full border bg-white shadow
+                             flex items-center justify-center hover:bg-zinc-50 active:scale-95"
                 >
                   <ArrowUp size={24} />
                 </button>
@@ -227,4 +385,3 @@ export default function SettingPage3() {
     </div>
   );
 }
-

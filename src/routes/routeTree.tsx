@@ -84,6 +84,8 @@ const documentSetting2Route = createRoute({
     featureCount?: string;
     aiModel?: string;
     techStack?: string;
+    chatSessionId?: string;
+    projectId?: string;
   } => ({
     projectName: search.projectName as string | undefined,
     mainColor: search.mainColor as string | undefined,
@@ -91,6 +93,8 @@ const documentSetting2Route = createRoute({
     featureCount: search.featureCount as string | undefined,
     aiModel: search.aiModel as string | undefined,
     techStack: search.techStack as string | undefined,
+    chatSessionId: search.chatSessionId as string | undefined,
+    projectId: search.projectId as string | undefined,
   }),
   component: () => (
     <Suspense fallback={<div className="p-6"> 로딩중...</div>}>
@@ -102,6 +106,15 @@ const documentSetting2Route = createRoute({
 const documentSetting3Route = createRoute({
   getParentRoute: () => rootRoute,
   path: "/document/setting3",
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): {
+    chatSessionId?: string;
+    projectId?: string;
+  } => ({
+    chatSessionId: search.chatSessionId as string | undefined,
+    projectId: search.projectId as string | undefined,
+  }),
   component: () => (
     <Suspense fallback={<div className="p-6"> 로딩중...</div>}>
       <SettingPage3 />
@@ -112,6 +125,13 @@ const documentSetting3Route = createRoute({
 const documentCheckRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/document/check",
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): {
+    projectId?: string;
+  } => ({
+    projectId: search.projectId as string | undefined,
+  }),
   component: () => (
     <Suspense fallback={<div className="p-6"> 로딩중...</div>}>
       <CheckPage />

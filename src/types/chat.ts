@@ -2,12 +2,21 @@
  * Chat API 타입 정의
  */
 
-export type ChatFileType = "PROJECT";
+export type ChatFileType = "PROJECT" | "PRD" | "UserStory" | "SRS";
 
 export interface StartChatRequest {
-  content_md: string;
   file_type: ChatFileType;
-  project_id: number;
+  project_id?: number; // 선택적 (chatService에서 -1로 설정)
+  content?: string | Record<string, any>; // 문자열 또는 객체 (chatService에서 문자열로 변환)
+  project?: {
+    project_name: string;
+    main_color: string;
+    page_count: number;
+    feature_count: number;
+    ai_model: string;
+    tech_stack: string[];
+  };
+  content_md?: string;
 }
 
 export interface StartChatResponse {
@@ -20,6 +29,8 @@ export interface StartChatResponse {
 
 export interface SendMessageRequest {
   content_md: string;
+  project_id?: number; // SettingPage3에서 사용
+  file_type?: "PRD" | "UserStory" | "SRS" | "USER_STORY"; // SettingPage3에서 사용 (USER_STORY 지원)
 }
 
 export type SendMessageResponse = string;
@@ -44,4 +55,24 @@ export interface UpdateAllDocFileRequest {
 export interface UpdateAllDocFileResponse {
   ok: boolean;
   project_id: number;
+}
+
+export interface ChatDocumentsResponse {
+  prd: string;
+  user_story: string;
+  srs: string;
+}
+
+export interface CreateChatSessionRequest {
+  project_id: number;
+  file_type: "PRD" | "UserStory" | "SRS";
+}
+
+export interface CreateChatSessionResponse {
+  chat_session_id: string;
+  chat_id: number;
+  project_id: number;
+  file_type: string;
+  stream_url: string;
+  created_at: string;
 }

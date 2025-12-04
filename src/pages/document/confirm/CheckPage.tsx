@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { mockData } from "./mocks/mockData";
@@ -7,11 +7,16 @@ import { markdownComponents } from "@/pages/task/components/TaskDetailModal/mark
 
 export default function CheckPage() {
   const navigate = useNavigate();
+  const search = useSearch({ from: "/document/check" });
   const [activeTab, setActiveTab] = useState<"PRD" | "UserStory" | "SRS">("PRD");
 
   const handleRevise = () => {
+    const { projectId } = search || {};
     navigate({
       to: "/document/setting3",
+      search: {
+        projectId: projectId || undefined,
+      },
     });
   };
 
@@ -28,7 +33,7 @@ export default function CheckPage() {
         <div className="flex flex-col gap-4 mb-8">
           <div className="flex justify-start items-center gap-4">
             <button 
-              onClick={() => navigate({ to: "/document/setting3" })}
+              onClick={handleRevise}
               className="text-gray-400 hover:text-gray-600 text-3xl"
             >
               &lt;

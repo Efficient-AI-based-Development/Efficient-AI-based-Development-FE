@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { ArrowUp } from "lucide-react";
+import { sendMessage, getStream, getChatDocuments, storeFile } from "@/pages/task/services/chatService";
 
 interface Message {
   id: string;
@@ -17,29 +18,29 @@ export default function SettingPage2() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const hasInitializedRef = useRef(false);
+  const streamAbortControllerRef = useRef<AbortController | null>(null);
 
-  // SettingPage1에서 전달받은 설정 정보를 AI 메시지로 변환
+  // SettingPage1에서 전달받은 정보 확인
   useEffect(() => {
     if (search && !hasInitializedRef.current) {
       hasInitializedRef.current = true;
-      const {
-        projectName,
-        mainColor,
-        pageCount,
-        featureCount,
-        aiModel,
-        techStack,
-      } = search;
+      const { chatSessionId, projectId, projectName, pageCount, featureCount, aiModel, techStack } = search;
 
-      if (projectName || pageCount || featureCount || aiModel || techStack) {
+      // chatSessionId 확인
+      if (!chatSessionId) {
+        console.error("❌ [SettingPage2] chatSessionId가 없습니다.");
+        window.alert("채팅 세션이 없습니다. 처음부터 다시 시작해주세요.");
+        return;
+      }
+
+      // 초기 안내 메시지 표시
         const settingsText = `지금까지 알려주신 내용은 다음과 같습니다:
 
 1. 프로젝트 이름: ${projectName || "-"}
-2. 메인 컬러: ${mainColor || "-"}
-3. 페이지 수: ${pageCount || "-"}
-4. 구현할 기능 수: ${featureCount || "-"}
-5. AI 모델: ${aiModel || "-"}
-6. 기술 스택: ${techStack ? techStack.split(",").join(", ") : "-"}
+2. 페이지 수: ${pageCount || "-"}
+3. 구현할 기능 수: ${featureCount || "-"}
+4. AI 모델: ${aiModel || "-"}
+5. 기술 스택: ${techStack ? techStack.split(",").join(", ") : "-"}
 
 추가 수정사항이 있다면 말씀해주시고, 수정이 완료되면 다음으로 버튼을 눌러주세요.`;
 
@@ -50,7 +51,6 @@ export default function SettingPage2() {
           timestamp: new Date(),
         };
         setMessages([initialMessage]);
-      }
     }
   }, [search]);
 
@@ -67,7 +67,15 @@ export default function SettingPage2() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || isSubmitting) return;
+    const { chatSessionId } = search;
+    
+    if (!message.trim() || isSubmitting || !chatSessionId) {
+      if (!chatSessionId) {
+        console.error("❌ [SettingPage2] chatSessionId가 없습니다.");
+        window.alert("채팅 세션이 없습니다. 처음부터 다시 시작해주세요.");
+      }
+      return;
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -77,25 +85,221 @@ export default function SettingPage2() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    const currentMessage = message;
     setMessage("");
     setIsSubmitting(true);
 
-    //AI 응답
-    setTimeout(() => {
+    try {
+      const chatSessionIdStr = chatSessionId as string;
+      
+      // ① Assistant 메시지 생성 (스트리밍으로 업데이트될 예정)
+      let assistantMessageText = "";
+      const assistantMessageId = (Date.now() + 1).toString();
       const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: "수정 요청을 반영하여 PRD를 업데이트하겠습니다. 추가로 수정이 필요한 부분이 있으시면 말씀해 주세요.",
+        id: assistantMessageId,
+        text: "",
         sender: "assistant",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, assistantMessage]);
+
+      // ② 먼저 메시지 전송 (백엔드가 메시지를 받아야 작업 시작)
+      console.log("💬 [SettingPage2] 메시지 전송 시작");
+      await sendMessage(chatSessionIdStr, {
+        content_md: currentMessage,
+      });
+      console.log("✅ [SettingPage2] 메시지 전송 완료");
+
+      // ③ 그 다음 SSE 스트리밍 시작 (await 없이 비동기 실행)
+      console.log("💬 [SettingPage2] SSE 스트리밍 연결 시작, chatSessionId:", chatSessionIdStr);
+      getStream(
+        chatSessionIdStr,
+        (data) => {
+          console.log("📥 [SettingPage2] onMessage 호출됨, data:", data);
+          
+          // 빈 메시지 무시
+          if (!data || data.trim() === "") {
+            console.log("⚠️ [SettingPage2] 빈 메시지 무시");
+            return;
+          }
+
+          // 종료 이벤트 처리 (다양한 종료 신호 감지)
+          const lowerData = data.toLowerCase();
+          if (
+            data === "[DONE]" ||
+            data.trim() === "[DONE]" ||
+            lowerData.includes("done") ||
+            lowerData.includes("end") ||
+            lowerData.includes("finish") ||
+            lowerData.includes("[end]") ||
+            lowerData.includes("[finish]")
+          ) {
+            console.log("✅ [SettingPage2] 스트리밍 종료 이벤트 수신:", data);
+            // 종료 신호는 onComplete에서 처리하므로 여기서는 무시
+            return;
+          }
+
+          // JSON 파싱 시도
+          let parsed;
+          try {
+            parsed = JSON.parse(data);
+            console.log("✅ [SettingPage2] JSON 파싱 성공:", parsed);
+          } catch (e) {
+            // JSON 파싱 실패 시 무시 (점, 공백 등 keep-alive chunk)
+            console.warn("⚠️ [SettingPage2] 파싱 실패한 chunk (무시):", data);
+            return;
+          }
+
+          // 본문 텍스트가 있는 chunk만 UI에 반영
+          let text = "";
+
+          // 👉 1) 백엔드가 보내는 type = "data" 처리
+          if (parsed.type === "data" && parsed.doc && parsed.message) {
+            const doc = parsed.doc;
+            const msg = parsed.message;
+
+            text = `
+          🟣 프로젝트 정보
+          - 프로젝트명: ${doc.project_name}
+          - 메인 컬러: ${doc.main_color}
+          - 페이지 수: ${doc.page_count}
+          - 기능 수: ${doc.feature_count}
+          - AI 모델: ${doc.ai_model}
+          - 기술 스택: ${(doc.tech_stack || []).join(", ")}
+
+          🟣 요약
+          ${msg.summary || "-"}
+
+          🟣 제안사항
+          ${(msg.suggestions || []).map((s: string) => `- ${s}`).join("\n")}
+
+          🟣 메시지
+          ${msg.message || ""}
+            `.trim();
+          }
+
+          // 👉 2) 기존 방식: 일반 text chunk
+          else if (parsed.type === "message") {
+            text = parsed.text || parsed.message || "";
+          } else if (typeof parsed.message === "string") {
+            text = parsed.message;
+          } else if (typeof parsed.content === "string") {
+            text = parsed.content;
+          } else if (typeof parsed.title === "string") {
+            text = parsed.title;
+          } else if (typeof parsed.text === "string") {
+            text = parsed.text;
+          }
+
+          // 👉 3) fallback
+          else {
+            const fallbackText = JSON.stringify(parsed, null, 2);
+            if (fallbackText && fallbackText.trim() !== "" && fallbackText !== "{}") {
+              text = fallbackText;
+            }
+          }
+
+          
+          if (text && text.trim() !== "") {
+            assistantMessageText += text;
+            console.log("💬 [SettingPage2] 누적된 텍스트:", assistantMessageText);
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === assistantMessageId
+                  ? { ...msg, text: assistantMessageText }
+                  : msg
+              )
+            );
+          } else {
+            console.warn("⚠️ [SettingPage2] 추출된 텍스트가 없음:", parsed);
+          }
+          
+        },
+        (error) => {
+          console.error("❌ [SettingPage2] 스트리밍 에러:", error);
+          setIsSubmitting(false);
+        },
+        async () => {
+          console.log("✅ [SettingPage2] 스트리밍 완료, 문서 조회 시작");
+          setIsSubmitting(false);
+          
+          // SSE 종료 후 문서 조회
+          try {
+            const documents = await getChatDocuments(chatSessionIdStr);
+            console.log("✅ [SettingPage2] 문서 조회 성공:", documents);
+            
+            // 문서를 메시지로 표시
+            if (documents.prd || documents.user_story || documents.srs) {
+              const documentsText = `문서 생성이 완료되었습니다.
+
+## PRD (Product Requirements Document)
+${documents.prd || "-"}
+
+## User Story
+${documents.user_story || "-"}
+
+## SRS (Software Requirements Specification)
+${documents.srs || "-"}
+
+추가 수정사항이 있다면 말씀해주시고, 수정이 완료되면 다음으로 버튼을 눌러주세요.`;
+
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === assistantMessageId
+                    ? { ...msg, text: assistantMessageText + "\n\n" + documentsText }
+                    : msg
+                )
+              );
+            }
+          } catch (error) {
+            console.error("❌ [SettingPage2] 문서 조회 실패:", error);
+            // 문서 조회 실패해도 스트리밍 메시지는 유지
+          }
+        }
+      );
+      console.log("✅ [SettingPage2] SSE 연결 시작됨 (비동기 실행 중)");
+    } catch (error) {
+      console.error("❌ [SettingPage2] 메시지 전송 실패:", error);
       setIsSubmitting(false);
-    }, 1000);
+      
+      // 에러 메시지 표시
+      const errorMessage: Message = {
+        id: (Date.now() + 2).toString(),
+        text: "메시지 전송에 실패했습니다. 다시 시도해주세요.",
+        sender: "assistant",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    }
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
+    const { projectId, chatSessionId } = search || {};
+    
+    // 수정된 문서 저장
+    if (chatSessionId && projectId) {
+      try {
+        console.log("💾 [SettingPage2] 문서 저장 시작");
+        const projectIdNum = Number(projectId);
+        if (!isNaN(projectIdNum)) {
+          await storeFile(chatSessionId as string, {
+            project_id: projectIdNum,
+          });
+          console.log("✅ [SettingPage2] 문서 저장 완료");
+        }
+      } catch (error) {
+        console.error("❌ [SettingPage2] 문서 저장 실패:", error);
+        // 저장 실패해도 다음 페이지로 이동 (사용자 경험)
+        window.alert("문서 저장에 실패했습니다. 계속 진행하시겠습니까?");
+      }
+    }
+    
     navigate({ 
       to: "/document/setting3",
+          search: {
+            chatSessionId: chatSessionId || undefined,
+            projectId: projectId || undefined,
+          },
     });
   };
 
@@ -160,9 +364,23 @@ export default function SettingPage2() {
                     isFirstMessage ? "border border-[#7871FE]/30" : ""
                   }`}
                 >
-                  <p className={`${isFirstMessage ? "font-semibold" : "font-medium text-base"} leading-relaxed whitespace-pre-line`}>
-                    {msg.text}
-                  </p>
+                  <div className={`${isFirstMessage ? "font-bold" : "font-medium text-base"} leading-relaxed whitespace-pre-line`}>
+                    {msg.text.split('\n').map((line, index) => {
+                      // 🟣로 시작하는 줄은 제목으로 처리
+                      if (line.trim().startsWith('🟣')) {
+                        return (
+                          <p key={index} className="text-xl font-semibold mt-4 mb-2 first:mt-0">
+                            {line.trim()}
+                          </p>
+                        );
+                      }
+                      return (
+                        <p key={index} className="text-medium">
+                          {line}
+                        </p>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             );

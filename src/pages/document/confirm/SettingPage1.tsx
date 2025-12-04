@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Input } from "@/components/ui/input";
+import { startChatWithInitFile } from "@/pages/task/services/chatService";
 
 const TECH_STACK_OPTIONS = [
   "React",
@@ -36,6 +37,7 @@ export default function SettingPage1() {
   const [isAiModelOpen, setIsAiModelOpen] = useState(false);
   const [isPageCountOpen, setIsPageCountOpen] = useState(false);
   const [isFeatureCountOpen, setIsFeatureCountOpen] = useState(false);
+  const [isCreatingProject, setIsCreatingProject] = useState(false);
   const techStackRef = useRef<HTMLDivElement>(null);
   const aiModelRef = useRef<HTMLDivElement>(null);
   const pageCountRef = useRef<HTMLDivElement>(null);
@@ -87,12 +89,44 @@ export default function SettingPage1() {
     aiModel.trim() !== "" &&
     techStack.length > 0;
 
-  const handleComplete = () => {
-    if (!isFormValid) return;
-    // 세팅 페이지2로 이동 (설정 정보 전달)
+  const handleComplete = async () => {
+    if (!isFormValid || isCreatingProject) return;
+
+    try {
+      setIsCreatingProject(true);
+
+      const projectPayload = {
+        title: projectName, // project_name → title로 변경
+        main_color: mainColor,
+        page_count: Number(pageCount),
+        feature_count: Number(featureCount),
+        ai_model: aiModel,
+        tech_stack: techStack,
+      };
+
+      console.log("💬 [SettingPage1] 채팅 세션 시작");
+      const chatResponse = await startChatWithInitFile({
+        file_type: "PROJECT",
+        project_id: -1, // 새 프로젝트 생성을 의미 (-1)
+        content: JSON.stringify(projectPayload),
+      });
+      
+      // 백엔드에서 받은 chat_id와 project_id 확인
+      console.log("✅ [SettingPage1] 백엔드 응답:", chatResponse);
+      console.log("📌 [SettingPage1] 받은 chat_id:", chatResponse.chat_id);
+      console.log("📌 [SettingPage1] 받은 project_id:", chatResponse.project_id);
+      
+      // 백엔드에서 받은 값이 없으면 에러
+      if (!chatResponse.chat_id || !chatResponse.project_id) {
+        throw new Error("백엔드에서 chat_id 또는 project_id를 받지 못했습니다.");
+      }
+
+      // SettingPage2로 이동 (백엔드에서 받은 chat_id와 project_id 사용)
     navigate({
       to: "/document/setting2",
       search: {
+          chatSessionId: chatResponse.chat_id.toString(), // 백엔드에서 받은 값
+          projectId: chatResponse.project_id.toString(), // 백엔드에서 받은 값
         projectName,
         mainColor,
         pageCount,
@@ -101,6 +135,12 @@ export default function SettingPage1() {
         techStack: techStack.join(","),
       },
     });
+    } catch (error) {
+      console.error("❌ [SettingPage1] 채팅 세션 생성 실패:", error);
+      window.alert("프로젝트 생성에 실패했습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setIsCreatingProject(false);
+    }
   };
 
   return (
@@ -448,14 +488,14 @@ export default function SettingPage1() {
           <div className="flex justify-end mt-8">
             <button
               onClick={handleComplete}
-              disabled={!isFormValid}
+              disabled={!isFormValid || isCreatingProject}
               className={`px-8 py-4 rounded-2xl transition-colors font-semibold text-sm ${
-                isFormValid
+                isFormValid && !isCreatingProject
                   ? "!bg-[#7871FE] !text-white hover:bg-[#6a63d4] cursor-pointer"
                   : "!bg-[#D9D9D9] !text-black"
               }`}
             >
-              완료
+              {isCreatingProject ? "프로젝트 생성 중..." : "완료"}
             </button>
           </div>
           </div>
