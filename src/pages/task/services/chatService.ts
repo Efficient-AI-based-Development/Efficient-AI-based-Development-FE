@@ -12,6 +12,8 @@ import type {
   UpdateAllDocFileRequest,
   UpdateAllDocFileResponse,
   ChatDocumentsResponse,
+  CreateChatSessionRequest,
+  CreateChatSessionResponse,
 } from "@/types/chat";
 import type { AxiosError } from "axios";
 
@@ -98,12 +100,76 @@ export async function startChatWithInitFile(
       "/api/v1/chats",
       payload,
     );
+    
+    // 백엔드 응답 확인
+    console.log("📥 [Chat Service] 백엔드 응답 전체:", response.data);
+    console.log("📌 [Chat Service] 백엔드에서 받은 chat_id:", response.data.chat_id);
+    console.log("📌 [Chat Service] 백엔드에서 받은 project_id:", response.data.project_id);
+    
+    // 백엔드에서 받은 값이 없으면 에러
+    if (!response.data.chat_id || response.data.project_id === undefined) {
+      console.error("❌ [Chat Service] 백엔드 응답에 chat_id 또는 project_id가 없습니다:", response.data);
+      throw new Error("백엔드 응답에 필수 필드(chat_id, project_id)가 없습니다.");
+    }
+    
     return response.data;
   } catch (error: any) {
     console.log("🔥 chatService.ts catch 호출됨?");
     console.error("🔥 [Chat Service Catch] 에러 객체 전체:", error);
     console.error("🔥 [Chat Service Catch] error.response:", error?.response);
     console.error("🔥 [Chat Service Catch] error.response.data:", error?.response?.data);
+    console.error("🔥 [Chat Service Catch] detail:", error?.response?.data?.detail);
+    throw error;
+  }
+}
+
+/**
+ * 채팅 세션 생성 (기존 프로젝트용)
+ * POST /api/v1/chats
+ * SettingPage3에서 사용: PRD/UserStory/SRS 문서 수정을 위한 세션 생성
+ */
+export async function createChatSession(
+  request: CreateChatSessionRequest,
+): Promise<CreateChatSessionResponse> {
+  try {
+    const payload = {
+      project_id: request.project_id,
+      file_type: request.file_type,
+      content: "{}", // 빈 JSON 객체
+      content_md: "{}", // 빈 JSON 객체
+    };
+
+    console.log("📦 [Chat Service] createChatSession payload:", JSON.stringify(payload, null, 2));
+
+    const response = await apiClient.post<StartChatResponse>(
+      "/api/v1/chats",
+      payload,
+    );
+
+    // 백엔드 응답 확인
+    console.log("📥 [Chat Service] createChatSession 백엔드 응답:", response.data);
+    console.log("📌 [Chat Service] 받은 chat_id:", response.data.chat_id);
+    console.log("📌 [Chat Service] 받은 project_id:", response.data.project_id);
+
+    // 백엔드에서 받은 값이 없으면 에러
+    if (response.data.chat_id === undefined || response.data.project_id === undefined) {
+      console.error("❌ [Chat Service] 백엔드 응답에 chat_id 또는 project_id가 없습니다:", response.data);
+      throw new Error("백엔드 응답에 필수 필드(chat_id, project_id)가 없습니다.");
+    }
+
+    // StartChatResponse를 CreateChatSessionResponse로 변환
+    // 백엔드 응답: { chat_id, stream_url, file_type, project_id, created_at }
+    return {
+      chat_session_id: response.data.chat_id.toString(), // chat_id를 문자열로 변환
+      chat_id: response.data.chat_id, // 백엔드에서 받은 chat_id
+      project_id: response.data.project_id, // 백엔드에서 받은 project_id
+      file_type: response.data.file_type,
+      stream_url: response.data.stream_url,
+      created_at: response.data.created_at,
+    };
+  } catch (error: any) {
+    console.error("🔥 [Chat Service] createChatSession 실패:", error);
+    console.error("🔥 [Chat Service Catch] error.response:", error?.response);
     console.error("🔥 [Chat Service Catch] detail:", error?.response?.data?.detail);
     throw error;
   }
@@ -165,12 +231,38 @@ export async function getStream(
       const es = new EventSource(url, { withCredentials: true });
 
       es.addEventListener("assistant", (event) => {
-        console.log("📨 assistant:", event.data);
-        onMessage(event.data);
+        console.log("📨 [Chat Service] assistant 이벤트 수신:", event.data);
+        try {
+          const data = JSON.parse(event.data);
+          console.log("✅ [Chat Service] assistant 데이터 파싱:", data);
+          
+          // content, message, text, title 등에서 텍스트 추출
+          const text = data.content || data.message || data.text || data.title || "";
+          if (text && text.trim() !== "") {
+            onMessage(JSON.stringify({ type: "message", text }));
+          }
+        } catch (e) {
+          // JSON 파싱 실패 시 원본 데이터 전달
+          console.warn("⚠️ [Chat Service] assistant 이벤트 파싱 실패, 원본 전달:", event.data);
+          onMessage(event.data);
+        }
+      });
+
+      es.addEventListener("message", (event) => {
+        console.log("📨 [Chat Service] message 이벤트 수신:", event.data);
+        try {
+          const data = JSON.parse(event.data);
+          const text = data.content || data.message || data.text || data.title || "";
+          if (text && text.trim() !== "") {
+            onMessage(JSON.stringify({ type: "message", text }));
+          }
+        } catch (e) {
+          onMessage(event.data);
+    }
       });
 
       es.addEventListener("turn_end", () => {
-        console.log("🟢 turn_end");
+        console.log("🟢 [Chat Service] turn_end 이벤트 수신");
         es.close();
         onComplete?.();
         resolve();
@@ -207,7 +299,7 @@ export async function getStream(
       console.error("❌ EventSource 생성 실패:", error);
       onError?.(error);
       reject(error);
-    }
+  }
   });
 }
 

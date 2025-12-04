@@ -107,25 +107,34 @@ export default function SettingPage1() {
       console.log("💬 [SettingPage1] 채팅 세션 시작");
       const chatResponse = await startChatWithInitFile({
         file_type: "PROJECT",
-        project_id: -1,
+        project_id: -1, // 새 프로젝트 생성을 의미 (-1)
         content: JSON.stringify(projectPayload),
       });
-      console.log("✅ [SettingPage1] 채팅 세션 생성 성공:", chatResponse);
+      
+      // 백엔드에서 받은 chat_id와 project_id 확인
+      console.log("✅ [SettingPage1] 백엔드 응답:", chatResponse);
+      console.log("📌 [SettingPage1] 받은 chat_id:", chatResponse.chat_id);
+      console.log("📌 [SettingPage1] 받은 project_id:", chatResponse.project_id);
+      
+      // 백엔드에서 받은 값이 없으면 에러
+      if (!chatResponse.chat_id || !chatResponse.project_id) {
+        throw new Error("백엔드에서 chat_id 또는 project_id를 받지 못했습니다.");
+      }
 
-      // SettingPage2로 이동 (chatSessionId와 projectId 포함)
-      navigate({
-        to: "/document/setting2",
-        search: {
-          chatSessionId: chatResponse.chat_id.toString(),
-          projectId: chatResponse.project_id.toString(),
-          projectName,
-          mainColor,
-          pageCount,
-          featureCount,
-          aiModel,
-          techStack: techStack.join(","),
-        },
-      });
+      // SettingPage2로 이동 (백엔드에서 받은 chat_id와 project_id 사용)
+    navigate({
+      to: "/document/setting2",
+      search: {
+          chatSessionId: chatResponse.chat_id.toString(), // 백엔드에서 받은 값
+          projectId: chatResponse.project_id.toString(), // 백엔드에서 받은 값
+        projectName,
+        mainColor,
+        pageCount,
+        featureCount,
+        aiModel,
+        techStack: techStack.join(","),
+      },
+    });
     } catch (error) {
       console.error("❌ [SettingPage1] 채팅 세션 생성 실패:", error);
       window.alert("프로젝트 생성에 실패했습니다. 잠시 후 다시 시도해주세요.");

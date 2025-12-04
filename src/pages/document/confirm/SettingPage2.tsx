@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { ArrowUp } from "lucide-react";
-import { sendMessage, getStream, getChatDocuments } from "@/pages/task/services/chatService";
+import { sendMessage, getStream, getChatDocuments, storeFile } from "@/pages/task/services/chatService";
 
 interface Message {
   id: string;
@@ -34,7 +34,7 @@ export default function SettingPage2() {
       }
 
       // 초기 안내 메시지 표시
-      const settingsText = `지금까지 알려주신 내용은 다음과 같습니다:
+        const settingsText = `지금까지 알려주신 내용은 다음과 같습니다:
 
 1. 프로젝트 이름: ${projectName || "-"}
 2. 페이지 수: ${pageCount || "-"}
@@ -44,13 +44,13 @@ export default function SettingPage2() {
 
 추가 수정사항이 있다면 말씀해주시고, 수정이 완료되면 다음으로 버튼을 눌러주세요.`;
 
-      const initialMessage: Message = {
-        id: "initial",
-        text: settingsText,
-        sender: "assistant",
-        timestamp: new Date(),
-      };
-      setMessages([initialMessage]);
+        const initialMessage: Message = {
+          id: "initial",
+          text: settingsText,
+          sender: "assistant",
+          timestamp: new Date(),
+        };
+        setMessages([initialMessage]);
     }
   }, [search]);
 
@@ -146,36 +146,63 @@ export default function SettingPage2() {
             console.log("✅ [SettingPage2] JSON 파싱 성공:", parsed);
           } catch (e) {
             // JSON 파싱 실패 시 무시 (점, 공백 등 keep-alive chunk)
-            console.warn("⚠️ [SettingPage2] 파싱 실패한 chunk (무시):", data, e);
+            console.warn("⚠️ [SettingPage2] 파싱 실패한 chunk (무시):", data);
             return;
           }
 
           // 본문 텍스트가 있는 chunk만 UI에 반영
           let text = "";
 
-          // message가 문자열이면 그대로
-          if (typeof parsed.message === "string") {
+          // 👉 1) 백엔드가 보내는 type = "data" 처리
+          if (parsed.type === "data" && parsed.doc && parsed.message) {
+            const doc = parsed.doc;
+            const msg = parsed.message;
+
+            text = `
+          🟣 프로젝트 정보
+          - 프로젝트명: ${doc.project_name}
+          - 메인 컬러: ${doc.main_color}
+          - 페이지 수: ${doc.page_count}
+          - 기능 수: ${doc.feature_count}
+          - AI 모델: ${doc.ai_model}
+          - 기술 스택: ${(doc.tech_stack || []).join(", ")}
+
+          🟣 요약
+          ${msg.summary || "-"}
+
+          🟣 제안사항
+          ${(msg.suggestions || []).map((s: string) => `- ${s}`).join("\n")}
+
+          🟣 메시지
+          ${msg.message || ""}
+            `.trim();
+          }
+
+          // 👉 2) 기존 방식: 일반 text chunk
+          else if (parsed.type === "message") {
+            text = parsed.text || parsed.message || "";
+          } else if (typeof parsed.message === "string") {
             text = parsed.message;
-          }
-          // message가 객체면 → JSON 문자열로 변환
-          else if (typeof parsed.message === "object" && parsed.message !== null) {
-            text = JSON.stringify(parsed.message, null, 2);
-          }
-          // content가 문자열이면
-          else if (typeof parsed.content === "string") {
+          } else if (typeof parsed.content === "string") {
             text = parsed.content;
-          }
-          // title이 문자열이면
-          else if (typeof parsed.title === "string") {
+          } else if (typeof parsed.title === "string") {
             text = parsed.title;
+          } else if (typeof parsed.text === "string") {
+            text = parsed.text;
           }
-          // fallback: 전체를 문자열로 변환
+
+          // 👉 3) fallback
           else {
-            text = JSON.stringify(parsed);
+            const fallbackText = JSON.stringify(parsed, null, 2);
+            if (fallbackText && fallbackText.trim() !== "" && fallbackText !== "{}") {
+              text = fallbackText;
+            }
           }
+
           
-          if (typeof text === "string" && text.trim() !== "") {
+          if (text && text.trim() !== "") {
             assistantMessageText += text;
+            console.log("💬 [SettingPage2] 누적된 텍스트:", assistantMessageText);
             setMessages((prev) =>
               prev.map((msg) =>
                 msg.id === assistantMessageId
@@ -183,6 +210,8 @@ export default function SettingPage2() {
                   : msg
               )
             );
+          } else {
+            console.warn("⚠️ [SettingPage2] 추출된 텍스트가 없음:", parsed);
           }
           
         },
@@ -244,9 +273,33 @@ ${documents.srs || "-"}
     }
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
+    const { projectId, chatSessionId } = search || {};
+    
+    // 수정된 문서 저장
+    if (chatSessionId && projectId) {
+      try {
+        console.log("💾 [SettingPage2] 문서 저장 시작");
+        const projectIdNum = Number(projectId);
+        if (!isNaN(projectIdNum)) {
+          await storeFile(chatSessionId as string, {
+            project_id: projectIdNum,
+          });
+          console.log("✅ [SettingPage2] 문서 저장 완료");
+        }
+      } catch (error) {
+        console.error("❌ [SettingPage2] 문서 저장 실패:", error);
+        // 저장 실패해도 다음 페이지로 이동 (사용자 경험)
+        window.alert("문서 저장에 실패했습니다. 계속 진행하시겠습니까?");
+      }
+    }
+    
     navigate({ 
       to: "/document/setting3",
+          search: {
+            chatSessionId: chatSessionId || undefined,
+            projectId: projectId || undefined,
+          },
     });
   };
 
@@ -311,9 +364,23 @@ ${documents.srs || "-"}
                     isFirstMessage ? "border border-[#7871FE]/30" : ""
                   }`}
                 >
-                  <p className={`${isFirstMessage ? "font-semibold" : "font-medium text-base"} leading-relaxed whitespace-pre-line`}>
-                    {msg.text}
-                  </p>
+                  <div className={`${isFirstMessage ? "font-bold" : "font-medium text-base"} leading-relaxed whitespace-pre-line`}>
+                    {msg.text.split('\n').map((line, index) => {
+                      // 🟣로 시작하는 줄은 제목으로 처리
+                      if (line.trim().startsWith('🟣')) {
+                        return (
+                          <p key={index} className="text-xl font-semibold mt-4 mb-2 first:mt-0">
+                            {line.trim()}
+                          </p>
+                        );
+                      }
+                      return (
+                        <p key={index} className="text-medium">
+                          {line}
+                        </p>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             );

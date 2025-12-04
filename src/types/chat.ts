@@ -2,7 +2,7 @@
  * Chat API 타입 정의
  */
 
-export type ChatFileType = "PROJECT";
+export type ChatFileType = "PROJECT" | "PRD" | "UserStory" | "SRS";
 
 export interface StartChatRequest {
   file_type: ChatFileType;
@@ -29,6 +29,8 @@ export interface StartChatResponse {
 
 export interface SendMessageRequest {
   content_md: string;
+  project_id?: number; // SettingPage3에서 사용
+  file_type?: "PRD" | "UserStory" | "SRS" | "USER_STORY"; // SettingPage3에서 사용 (USER_STORY 지원)
 }
 
 export type SendMessageResponse = string;
@@ -61,4 +63,18 @@ export interface ChatDocumentsResponse {
   prd: string;
   user_story: string;
   srs: string;
+}
+
+export interface CreateChatSessionRequest {
+  project_id: number;
+  file_type: "PRD" | "UserStory" | "SRS";
+}
+
+export interface CreateChatSessionResponse {
+  chat_session_id: string;
+  chat_id: number;
+  project_id: number;
+  file_type: string;
+  stream_url: string;
+  created_at: string;
 }

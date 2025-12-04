@@ -41,9 +41,9 @@ export default function HomePage() {
 
     if (loggedIn) {
       // 로그인되어 있으면 바로 setting1로 이동
-      navigate({
-        to: "/document/setting1",
-      });
+    navigate({
+      to: "/document/setting1",
+    });
     } else {
       // 로그인되어 있지 않으면 로그인 페이지로 이동
       navigate({
