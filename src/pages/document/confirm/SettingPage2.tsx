@@ -144,7 +144,7 @@ export default function SettingPage2() {
           if (!firstStreamSkipped.current) {
             firstStreamSkipped.current = true;
             // 빈 데이터나 단순 연결 확인 메시지만 스킵
-            if (!data || data.trim().length === 0 || data === "connected" || data === "{}") {
+            if (!data || (typeof data === "string" && data.trim().length === 0) || data === "connected" || data === "{}") {
               console.log("🔵 첫 SSE 메시지 스킵 (연결 확인):", data);
               return;
             }
@@ -153,22 +153,23 @@ export default function SettingPage2() {
           }
 
           // 종료 신호 (더 정확한 체크)
-          const trimmedData = data.trim();
-          if (
-            trimmedData === "[done]" ||
-            trimmedData.toLowerCase() === "done" ||
-            trimmedData.toLowerCase() === "[done]"
-          ) {
-            console.log("🔚 종료 신호 감지:", data);
-            return;
+          if (typeof data === "string") {
+            const trimmedData = data.trim();
+            if (
+              trimmedData === "[done]" ||
+              trimmedData.toLowerCase() === "done"
+            ) {
+              console.log("🔚 종료 신호 감지:", data);
+              return;
+            }
           }
 
           // 데이터 처리
+          const parsed = typeof data === "object" ? data : JSON.parse(data);
+          
           try {
-            const parsed = JSON.parse(data);
-
             // JSON 파싱 성공 시 처리
-            if (parsed.type === "data" && parsed.doc && parsed.message) {
+            if (parsed && parsed.type === "data" && parsed.doc && parsed.message) {
               const doc = parsed.doc;
               const msg = parsed.message;
 

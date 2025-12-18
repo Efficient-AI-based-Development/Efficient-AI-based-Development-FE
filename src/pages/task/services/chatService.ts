@@ -78,12 +78,21 @@ export async function createChatSession(
   request: CreateChatSessionRequest,
 ): Promise<CreateChatSessionResponse> {
   try {
-    const payload = {
+    const payload: {
+      project_id: number;
+      file_type: string;
+      content?: string;
+      content_md?: string;
+    } = {
       project_id: request.project_id,
       file_type: request.file_type,
       content: "{}",
-      content_md: request.content_md ?? "", // 필수 필드
     };
+
+    // content_md가 제공된 경우에만 추가
+    if (request.content_md !== undefined) {
+      payload.content_md = request.content_md;
+    }
 
     const response = await apiClient.post<StartChatResponse>(
       "/api/v1/chats",
@@ -135,7 +144,7 @@ export async function sendMessage(
  * --------------------------------------------------------- */
 export async function getStream(
   chatSessionId: string | number,
-  onMessage: (data: string) => void,
+  onMessage: (data: any) => void, // JSON 파싱된 객체 전달
   onError?: (error: Error) => void,
   onComplete?: () => void,
 ): Promise<() => void> {
@@ -167,12 +176,14 @@ export async function getStream(
         resolve(cleanup);
       };
 
-      es.addEventListener("message", (event) => {
-        onMessage(event.data);
-      });
-
+      // assistant 이벤트만 처리 (JSON 파싱 후 전달)
       es.addEventListener("assistant", (event) => {
-        onMessage(event.data);
+        try {
+          const data = JSON.parse(event.data);
+          onMessage(data);
+        } catch (err) {
+          console.error("JSON parse error:", err, event.data);
+        }
       });
 
       es.addEventListener("turn_end", () => {

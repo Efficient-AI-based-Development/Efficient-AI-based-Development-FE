@@ -10,7 +10,7 @@ const API_BASE_URL = "http://34.61.144.150:8000";
 // 쿠키 기반 인증 사용 (백엔드가 쿠키로 토큰을 전달)
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000, // 10초 타임아웃
+  timeout: 1000000, // 1000000ms 타임아웃
   headers: {
     "Content-Type": "application/json",
   },

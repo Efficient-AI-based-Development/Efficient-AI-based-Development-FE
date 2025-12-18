@@ -51,6 +51,10 @@ export default function SettingPage3() {
   const [activeTab, setActiveTab] = useState<TabType>("PRD");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [inputMessage, setInputMessage] = useState("");
+  // 🔥 로딩 말풍선 관리 (assistant 메시지 추가 시 자동 제거)
+  const [isStreaming, setIsStreaming] = useState(false);
+  // 🔥 완료 상태 관리
+  const [isCompleted, setIsCompleted] = useState(false);
 
   const chatRef = useRef<HTMLDivElement>(null);
   const streamCleanupRef = useRef<Record<TabType, (() => void) | null>>({
@@ -58,6 +62,14 @@ export default function SettingPage3() {
     USER_STORY: null,
     SRS: null,
   });
+  // 🔥 첫 번째 assistant 메시지 무시 플래그 (각 탭별로 관리)
+  const firstAssistantMessageIgnoredRef = useRef<Record<TabType, boolean>>({
+    PRD: false,
+    USER_STORY: false,
+    SRS: false,
+  });
+  // 🔥 초기화 플래그 (React.StrictMode로 인한 2번 실행 방지)
+  const initializedRef = useRef(false);
 
   // 스크롤 자동 이동
   useEffect(() => {
@@ -72,6 +84,10 @@ export default function SettingPage3() {
   // 초기 세션 생성 및 문서 3개 모두 로딩
   // --------------------------------
   useEffect(() => {
+    // 🔥 React.StrictMode로 인한 2번 실행 방지
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+
     if (!projectId) {
       alert("projectId 없음");
       navigate({ to: "/document/setting1" });
@@ -103,12 +119,15 @@ export default function SettingPage3() {
           const session = await createChatSession({
             project_id: Number(projectId),
             file_type: fileTypeForAPI as any,
-            content_md: "", // 필수 필드
+            content_md: "",
           });
 
           newSessions[tab] = session.chat_id;
           console.log(`✅ [SettingPage3] ${tab} 세션 생성 완료: ${session.chat_id}`);
 
+          // 백엔드 문서 생성 시간 벌기
+          await new Promise(res => setTimeout(res, 1500));
+          
           // tempDocument API로 최신 문서 가져오기
           const doc = await getLatestDocument(session.chat_id);
           newDocuments[tab] = doc || "";
@@ -131,17 +150,36 @@ export default function SettingPage3() {
   // 🔥 탭 전환 처리 (이미 캐시된 문서 표시, SSE 연결은 하지 않음)
   // ------------------------------
   const handleTabChange = (tab: TabType) => {
+    if (isCompleted) return; // 완료 후 탭 전환 불가
     setActiveTab(tab);
     // 문서는 이미 로드되어 있으므로 캐시에서 즉시 표시됨
     // SSE는 메시지 전송 시에만 사용
   };
 
   // ------------------------------
+  // 🔥 서버에서 최신 문서 가져오기
+  // ------------------------------
+  const refreshDocumentFromServer = async (tab: TabType) => {
+    const sessionId = chatSessions[tab];
+    if (!sessionId) return;
+
+    try {
+      const latestDoc = await getLatestDocument(sessionId);
+      setDocuments((prev) => ({
+        ...prev,
+        [tab]: latestDoc || prev[tab],
+      }));
+    } catch (e) {
+      console.error("❌ 문서 갱신 실패:", e);
+    }
+  };
+
+  // ------------------------------
   // 🔥 메시지 전송 + SSE
   // ------------------------------
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputMessage.trim()) return;
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!inputMessage.trim() || isCompleted) return;
 
     const sessionId = chatSessions[activeTab];
     if (!sessionId) {
@@ -149,11 +187,14 @@ export default function SettingPage3() {
       return;
     }
 
-    // 기존 스트림 정리
+    // 🔥 기존 스트림 정리 (메시지 전송 직전에 무조건 정리)
     if (streamCleanupRef.current[activeTab]) {
-      streamCleanupRef.current[activeTab]?.();
+      streamCleanupRef.current[activeTab]!();
       streamCleanupRef.current[activeTab] = null;
     }
+    
+    // 🔥 새로운 메시지 전송 시 첫 메시지 무시 플래그 리셋
+    firstAssistantMessageIgnoredRef.current[activeTab] = false;
 
     const userMsg: Message = {
       id: Date.now(),
@@ -170,6 +211,7 @@ export default function SettingPage3() {
     const userText = inputMessage.trim();
     setInputMessage("");
     setIsSubmitting(true);
+    setIsStreaming(true); // 🔥 스트리밍 시작
 
     // 서버에 메시지 전송
     await sendMessage(sessionId, {
@@ -178,85 +220,92 @@ export default function SettingPage3() {
       file_type: activeTab,
     });
 
-    // SSE 스트림 시작
+    // SSE 스트림 시작 (getStream에서 이미 JSON.parse된 데이터가 전달됨)
     const cleanup = await getStream(
       sessionId,
-      (chunk) => {
-        if (!chunk || chunk.trim() === "") return;
+      (parsed) => {
+        // parsed는 이미 JSON 객체임 (getStream에서 파싱됨)
+        let shouldRefresh = false;
 
-        if (chunk.trim() === "[DONE]" || chunk.trim() === "OK") {
-          setIsSubmitting(false);
-          return;
+        // 🔥 1) 문서 갱신이 있다면 → 먼저 갱신 (우선순위 1)
+        if (parsed.doc) {
+          setDocuments((prev) => ({
+            ...prev,
+            PRD: parsed.doc.prd !== undefined 
+              ? (typeof parsed.doc.prd === "string" ? parsed.doc.prd : JSON.stringify(parsed.doc.prd))
+              : prev.PRD,
+            USER_STORY: parsed.doc.user_story !== undefined
+              ? (typeof parsed.doc.user_story === "string" ? parsed.doc.user_story : JSON.stringify(parsed.doc.user_story))
+              : prev.USER_STORY,
+            SRS: parsed.doc.srs !== undefined
+              ? (typeof parsed.doc.srs === "string" ? parsed.doc.srs : JSON.stringify(parsed.doc.srs))
+              : prev.SRS,
+          }));
+          shouldRefresh = true;
         }
 
-        let parsed;
-        try {
-          parsed = JSON.parse(chunk);
-        } catch {
-          return;
-        }
+        // 🔥 2) 메시지 처리 (첫 메시지는 무시)
+        if (parsed.message) {
+          // 첫 번째 assistant 메시지 무시
+          if (!firstAssistantMessageIgnoredRef.current[activeTab]) {
+            firstAssistantMessageIgnoredRef.current[activeTab] = true;
+            shouldRefresh = true; // 첫 메시지는 무시하지만 문서는 갱신
+            // shouldRefresh가 true이므로 아래에서 한 번만 호출됨
+          } else {
+            const messageText = typeof parsed.message === "string" ? parsed.message : parsed.message.message || "";
+            if (messageText && messageText.trim() !== "") {
+              // 🔥 기존 assistant 말풍선에 이어 붙이기 (중복 방지)
+              setMessages((prev) => {
+                const currentMessages = prev[activeTab];
+                const last = currentMessages[currentMessages.length - 1];
 
-        // 🔥 문서 업데이트
-        if (parsed.type === "document") {
-          const md = parsed.content_md || "";
-          setDocuments((prev) => ({ ...prev, [activeTab]: md }));
-          return;
-        }
+                // 마지막 메시지가 assistant 메시지이면 이어 붙이기
+                if (last && last.sender === "assistant") {
+                  return {
+                    ...prev,
+                    [activeTab]: currentMessages.map((m, idx) =>
+                      idx === currentMessages.length - 1
+                        ? { ...m, text: m.text + messageText }
+                        : m
+                    ),
+                  };
+                }
 
-        // 🔥 parsed.type === "data" 형식 처리
-        if (parsed.type === "data" && parsed.doc) {
-          const doc = parsed.doc;
-          if (doc.prd) {
-            const prdContent = typeof doc.prd === "string" ? doc.prd : JSON.stringify(doc.prd);
-            setDocuments((prev) => ({ ...prev, PRD: prdContent }));
-          }
-          if (doc.user_story || doc.userStory) {
-            const userStoryContent = typeof (doc.user_story || doc.userStory) === "string"
-              ? (doc.user_story || doc.userStory)
-              : JSON.stringify(doc.user_story || doc.userStory);
-            setDocuments((prev) => ({ ...prev, USER_STORY: userStoryContent }));
-          }
-          if (doc.srs) {
-            const srsContent = typeof doc.srs === "string" ? doc.srs : JSON.stringify(doc.srs);
-            setDocuments((prev) => ({ ...prev, SRS: srsContent }));
-          }
-          return;
-        }
-
-        // 🔥 assistant 메시지 업데이트
-        if (parsed.message || parsed.text) {
-          const text = parsed.message || parsed.text;
-
-          setMessages((prev) => {
-            const last = prev[activeTab][prev[activeTab].length - 1];
-
-            // assistant 메시지가 새로 시작됨
-            if (!last || last.sender !== "assistant") {
-              return {
-                ...prev,
-                [activeTab]: [
-                  ...prev[activeTab],
-                  { id: Date.now(), sender: "assistant", text, timestamp: new Date() },
-                ],
-              };
+                // 새로운 assistant 메시지 생성
+                return {
+                  ...prev,
+                  [activeTab]: [
+                    ...currentMessages,
+                    {
+                      id: Date.now(),
+                      sender: "assistant",
+                      text: messageText,
+                      timestamp: new Date(),
+                    },
+                  ],
+                };
+              });
+              setIsStreaming(false); // 🔥 assistant 메시지가 추가되면 로딩 말풍선 제거
+              shouldRefresh = true;
             }
+          }
+        }
 
-            // 기존 assistant 말풍선에 이어 붙이기
-            return {
-              ...prev,
-              [activeTab]: prev[activeTab].map((m, idx) =>
-                idx === prev[activeTab].length - 1 ? { ...m, text: m.text + text } : m
-              ),
-            };
+        // 🔥 SSE chunk당 1번만 문서 갱신 호출
+        if (shouldRefresh) {
+          refreshDocumentFromServer(activeTab).catch((e) => {
+            console.error("❌ 문서 갱신 실패:", e);
           });
         }
       },
       () => {
         setIsSubmitting(false);
+        setIsStreaming(false); // 🔥 SSE 에러 시 스트리밍 종료
         streamCleanupRef.current[activeTab] = null;
       },
       () => {
         setIsSubmitting(false);
+        setIsStreaming(false); // 🔥 SSE 완료 시 스트리밍 종료
         streamCleanupRef.current[activeTab] = null;
       }
     );
@@ -277,6 +326,8 @@ export default function SettingPage3() {
         await storeFile(sessionId, { project_id: Number(projectId) });
       }
     }
+
+    setIsCompleted(true);
 
     navigate({
       to: "/document/check",
@@ -320,8 +371,11 @@ export default function SettingPage3() {
               <button
                 key={tab}
                 onClick={() => handleTabChange(tab)}
+                disabled={isCompleted}
                 className={`px-6 py-3 rounded-3xl font-semibold ${
-                  activeTab === tab
+                  isCompleted
+                    ? "bg-red-200 text-red-700 cursor-not-allowed"
+                    : activeTab === tab
                     ? "bg-gray-600 text-white"
                     : "bg-white border border-gray-300 text-gray-600"
                 }`}
@@ -352,7 +406,12 @@ export default function SettingPage3() {
             <div className="flex justify-end mt-4">
               <button
                 onClick={handleComplete}
-                className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-800"
+                disabled={isCompleted}
+                className={`px-6 py-3 rounded-lg ${
+                  isCompleted
+                    ? "bg-red-200 text-red-700 cursor-not-allowed"
+                    : "bg-gray-600 text-white hover:bg-gray-800"
+                }`}
               >
                 완료
               </button>
@@ -381,25 +440,35 @@ export default function SettingPage3() {
                 </div>
               ))}
 
-              {isSubmitting && (
+              {isStreaming && (
                 <div className="flex justify-start ml-4">
                   <div className="bg-[#7871FE]/30 rounded-2xl p-4">...</div>
                 </div>
               )}
             </div>
 
-            <form onSubmit={handleSubmit} className="p-4 relative">
+            <form className="p-4 relative">
               <textarea
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit();
+                  }
+                }}
+                disabled={isCompleted}
                 placeholder={`${activeTab} 문서 수정 요청을 입력하세요...`}
                 className="w-full h-[120px] px-6 py-5 bg-[#7871FE]/10 rounded-[18px]
-                focus:ring-2 focus:ring-[#7871FE]/40 outline-none resize-none pr-16"
+                focus:ring-2 focus:ring-[#7871FE]/40 outline-none resize-none pr-16
+                disabled:cursor-not-allowed"
               />
               <button
-                type="submit"
-                disabled={!inputMessage.trim() || isSubmitting}
-                className="absolute right-5 bottom-5 h-10 w-10 bg-white border rounded-full shadow flex items-center justify-center"
+                type="button"
+                onClick={handleSubmit}
+                disabled={isCompleted || !inputMessage.trim() || isSubmitting}
+                className="absolute right-5 bottom-5 h-10 w-10 bg-white border rounded-full shadow flex items-center justify-center
+                disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ArrowUp size={24} />
               </button>
