@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 
 // axios 전역 설정: 모든 요청에 쿠키 포함
 axios.defaults.withCredentials = true;
@@ -120,9 +120,10 @@ apiClient.interceptors.response.use(
           originalRequest._isRefreshing = false;
 
           // 토큰 갱신 실패 시 refreshToken도 제거하여 무한 루프 방지
+          const axiosError = refreshError as AxiosError;
           if (
-            refreshError.response?.status === 401 ||
-            refreshError.response?.status === 403
+            axiosError.response?.status === 401 ||
+            axiosError.response?.status === 403
           ) {
             localStorage.removeItem("refreshToken");
             localStorage.removeItem("token");

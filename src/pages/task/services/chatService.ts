@@ -82,7 +82,7 @@ export async function createChatSession(
       project_id: request.project_id,
       file_type: request.file_type,
       content: "{}",
-      content_md: "{}",
+      content_md: request.content_md ?? "", // 필수 필드
     };
 
     const response = await apiClient.post<StartChatResponse>(
@@ -138,14 +138,14 @@ export async function getStream(
   onMessage: (data: string) => void,
   onError?: (error: Error) => void,
   onComplete?: () => void,
-): Promise<void> {
+): Promise<() => void> {
   const accessToken =
     localStorage.getItem("accessToken") ||
     localStorage.getItem("token");
 
   if (!accessToken) {
     onError?.(new Error("Access token not found"));
-    return;
+    return () => {};
   }
 
   const url = `${BACKEND_URL}/api/v1/chats/${chatSessionId}/stream?token=${accessToken}`;
@@ -155,8 +155,16 @@ export async function getStream(
       console.log("🔗 SSE 연결:", url);
       const es = new EventSource(url, { withCredentials: true });
 
+      // cleanup 함수
+      const cleanup = () => {
+        console.log("🧹 SSE 연결 정리");
+        es.close();
+      };
+
       es.onopen = () => {
         console.log("🟢 SSE 연결 성공");
+        // 연결 성공 시 cleanup 함수 반환
+        resolve(cleanup);
       };
 
       es.addEventListener("message", (event) => {
@@ -170,7 +178,6 @@ export async function getStream(
       es.addEventListener("turn_end", () => {
         es.close();
         onComplete?.();
-        resolve();
       });
 
       es.onerror = () => {
@@ -260,5 +267,23 @@ export async function getChatDocuments(
     const error = err as AxiosError;
     console.error("🔥 [getChatDocuments] error:", error);
     throw error;
+  }
+}
+
+/* ---------------------------------------------------------
+ * 9) 최신 문서 조회 (tempDocument)
+ * --------------------------------------------------------- */
+export async function getLatestDocument(
+  chatSessionId: string | number,
+): Promise<string> {
+  try {
+    const response = await apiClient.get<string>(
+      `/api/v1/chats/${chatSessionId}/tempDocument`,
+    );
+    return response.data || "";
+  } catch (err) {
+    const error = err as AxiosError;
+    console.error("🔥 [getLatestDocument] error:", error);
+    return "";
   }
 }

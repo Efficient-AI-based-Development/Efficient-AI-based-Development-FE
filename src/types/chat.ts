@@ -66,6 +66,7 @@ export interface ChatDocumentsResponse {
 export interface CreateChatSessionRequest {
   project_id: number;
   file_type: "PRD" | "UserStory" | "SRS";
+  content_md?: string; // 필수 필드 (기본값: "")
 }
 
 export interface CreateChatSessionResponse {
